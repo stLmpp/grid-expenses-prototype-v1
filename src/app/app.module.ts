@@ -14,10 +14,12 @@ import { SetFilterModule } from '@ag-grid-enterprise/set-filter';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
 import { registerLocaleData } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
 import pt from '@angular/common/locales/pt';
 import { LOCALE_ID, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgxMaskModule } from 'ngx-mask';
@@ -26,6 +28,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-currency.component';
 import { GridControlComponent } from './grid-control/grid-control.component';
+import { HeaderPersonComponent } from './header-person/header-person.component';
 
 registerLocaleData(pt, 'pt-BR');
 
@@ -46,7 +49,7 @@ ModuleRegistry.registerModules([
 ]);
 
 @NgModule({
-  declarations: [AppComponent, GridControlComponent, CellEditorCurrencyComponent],
+  declarations: [AppComponent, GridControlComponent, CellEditorCurrencyComponent, HeaderPersonComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -55,6 +58,8 @@ ModuleRegistry.registerModules([
     MatButtonModule,
     NgxMaskModule.forRoot(),
     FormsModule,
+    MatIconModule,
+    HttpClientModule,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   bootstrap: [AppComponent],

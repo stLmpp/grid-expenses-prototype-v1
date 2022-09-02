@@ -6,5 +6,6 @@
   decimalMarker=","
   thousandSeparator="."
   class="ag-input-field-input ag-text-field-input"
-  [(ngModel)]="value"
+  [ngModel]="value"
+  (ngModelChange)="onModelChange($event)"
 />

@@ -7,11 +7,13 @@ import {
   RowDataUpdatedEvent,
   RowDragEvent,
 } from '@ag-grid-community/core';
-import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
-import { map, Observable, tap } from 'rxjs';
+import { ChangeDetectionStrategy, Component, inject, OnDestroy, ViewChild, ViewContainerRef } from '@angular/core';
+import { combineLatest, map, Observable } from 'rxjs';
 import { Key } from 'ts-key-enum';
 
 import { AppService } from './app.service';
+import { HeaderPersonComponent, HeaderPersonParams } from './header-person/header-person.component';
+import { MatIconDynamicHtmlService } from './mat-icon-dynamic-html.service';
 import { Expense } from './models/expense';
 import { isRangeSingleRow } from './utilts';
 
@@ -21,17 +23,18 @@ import { isRangeSingleRow } from './utilts';
   styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent {
-  constructor(private readonly appService: AppService) {}
+export class AppComponent implements OnDestroy {
+  private readonly _appService = inject(AppService);
+  private readonly _viewContainerRef = inject(ViewContainerRef);
+  private readonly _matIconDynamicHtmlService = inject(MatIconDynamicHtmlService);
+
+  private readonly _addIcon = 'add';
+  private readonly _deleteIcon = 'remove';
 
   @ViewChild(AgGridAngular) readonly agGrid?: AgGridAngular;
 
-  readonly data$ = this.appService.expenses$.pipe(
-    tap((data) => {
-      console.log({ data });
-    })
-  );
-  readonly colDefs$ = this.appService.colDefs$;
+  readonly data$ = this._appService.expenses$;
+  readonly colDefs$ = this._appService.colDefs$;
   readonly defaultColDef: ColDef<Expense> = {
     filter: true,
     sortable: true,
@@ -48,7 +51,7 @@ export class AppComponent {
             params.event.preventDefault();
             if (isRangeSingleRow(params.api)) {
               const lastIndex = params.api.getModel().getRowCount() - 1;
-              this.appService.deleteRow(params.node.id!);
+              this._appService.deleteRow(params.node.id!);
               if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
                 params.api.setFocusedCell(lastIndex - 1, params.column);
               }
@@ -59,7 +62,7 @@ export class AppComponent {
         case Key.Delete: {
           const selectedRows = params.api.getSelectedRows();
           if (selectedRows.length) {
-            this.appService.deleteRows(selectedRows.map((row) => row.id));
+            this._appService.deleteRows(selectedRows.map((row) => row.id));
           }
           break;
         }
@@ -87,7 +90,7 @@ export class AppComponent {
             (params.event.metaKey || params.event.altKey)
           ) {
             const targetIndex = params.node.rowIndex! + 1;
-            this.appService.move(params.node.rowIndex!, targetIndex);
+            this._appService.move(params.node.rowIndex!, targetIndex);
             params.api.clearRangeSelection();
             params.api.setFocusedCell(targetIndex, params.column);
             return true;
@@ -97,7 +100,7 @@ export class AppComponent {
         case Key.ArrowUp: {
           if (params.node.rowIndex && params.event.shiftKey && (params.event.metaKey || params.event.altKey)) {
             const targetIndex = params.node.rowIndex - 1;
-            this.appService.move(params.node.rowIndex, targetIndex);
+            this._appService.move(params.node.rowIndex, targetIndex);
             params.api.clearRangeSelection();
             params.api.setFocusedCell(targetIndex, params.column);
             return true;
@@ -109,13 +112,13 @@ export class AppComponent {
           if (params.event.ctrlKey || params.event.metaKey) {
             params.event.preventDefault();
             const newIndex = params.api.getModel().getRowCount();
-            const newRow = this.appService.getBlankRow();
+            const newRow = this._appService.getBlankRow();
             params.api.applyTransaction({
               add: [newRow],
             });
             params.api.setFocusedCell(newIndex, params.column);
             params.api.ensureIndexVisible(newIndex);
-            this.appService.addRow(newRow);
+            this._appService.addRow(newRow);
           }
           break;
         }
@@ -124,7 +127,7 @@ export class AppComponent {
             params.event.preventDefault();
             if (isRangeSingleRow(params.api)) {
               const newIndex = params.node.rowIndex! + 1;
-              this.appService.addBlankRowAt(newIndex);
+              this._appService.addBlankRowAt(newIndex);
               params.api.setFocusedCell(newIndex, params.column);
             }
           }
@@ -133,17 +136,20 @@ export class AppComponent {
       return false;
     },
   };
-  readonly pinnedTopRowData$: Observable<Pick<Expense, 'people'>[]> = this.data$.pipe(
-    map((expenses) => {
-      const people: Record<string, number> = {};
+  readonly pinnedTopRowData$: Observable<Pick<Expense, 'people'>[]> = combineLatest([
+    this._appService.people$,
+    this.data$,
+  ]).pipe(
+    map(([people, expenses]) => {
+      const peopleObject: Record<string, number> = people.reduce((acc, item) => ({ ...acc, [item.id]: 0 }), {});
       for (const expense of expenses) {
         const entries = Object.entries(expense.people);
         for (const [key, value] of entries) {
-          people[key] ??= 0;
-          people[key] += value;
+          peopleObject[key] ??= 0;
+          peopleObject[key] += value ?? 0;
         }
       }
-      return [{ people }];
+      return [{ people: peopleObject }];
     })
   );
 
@@ -155,18 +161,60 @@ export class AppComponent {
     rowSelection: 'multiple',
     enableCharts: true,
     statusBar: {
-      statusPanels: [{ statusPanel: 'agTotalAndFilteredRowCountComponent' }],
+      statusPanels: [
+        { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
+        { statusPanel: 'agAggregationComponent', align: 'right' },
+      ],
+    },
+    localeText: {
+      thousandSeparator: '.',
+      decimalSeparator: ',',
+    },
+    getMainMenuItems: (params) => {
+      const headerPersonColumns =
+        params.columnApi
+          .getColumns()
+          ?.filter((column) => column.getColDef().headerComponent === HeaderPersonComponent) ?? [];
+      const isHeaderPersonColumn = params.column.getColDef().headerComponent === HeaderPersonComponent;
+      const headerPersonParams = params.column.getColDef().headerComponentParams as HeaderPersonParams | null;
+      const iconAdd = this._matIconDynamicHtmlService.get(this._viewContainerRef, 'add');
+      const iconDelete = this._matIconDynamicHtmlService.get(this._viewContainerRef, 'delete');
+      return [
+        {
+          name: 'Add person',
+          action: () => {
+            if (!headerPersonParams) {
+              return;
+            }
+            headerPersonParams.newPerson$.next();
+          },
+          disabled: !isHeaderPersonColumn || !headerPersonParams,
+          icon: iconAdd,
+        },
+        {
+          name: 'Delete person',
+          action: () => {
+            if (!headerPersonParams) {
+              return;
+            }
+            headerPersonParams.deletePerson$.next();
+          },
+          disabled: !isHeaderPersonColumn || !headerPersonParams || headerPersonColumns.length <= 1,
+          icon: iconDelete,
+        },
+        ...params.defaultItems,
+      ];
     },
     getRowId: (config) => config.data.id,
   };
 
   onCellValueChanged($event: CellValueChangedEvent<Expense>): void {
     console.log($event);
-    this.appService.updateRow($event.node.id!, $event.data);
+    this._appService.updateRow($event.node.id!, $event.data);
   }
 
   onGridReady($event: GridReadyEvent<Expense>): void {
-    this.appService.generateRandomData();
+    this._appService.generateRandomData();
   }
 
   onRowDataUpdated($event: RowDataUpdatedEvent<Expense>): void {
@@ -180,6 +228,11 @@ export class AppComponent {
     if ($event.overIndex === -1) {
       return;
     }
-    this.appService.move($event.node.rowIndex!, $event.overIndex);
+    this._appService.move($event.node.rowIndex!, $event.overIndex);
+  }
+
+  ngOnDestroy(): void {
+    this._matIconDynamicHtmlService.destroy(this._addIcon);
+    this._matIconDynamicHtmlService.destroy(this._deleteIcon);
   }
 }

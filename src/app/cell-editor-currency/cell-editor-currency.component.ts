@@ -1,6 +1,7 @@
 import { ICellEditorAngularComp } from '@ag-grid-community/angular';
 import { ICellEditorParams } from '@ag-grid-community/core';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, ViewChild } from '@angular/core';
+import { isString } from 'st-utils';
 
 @Component({
   selector: 'app-cell-editor-currency',
@@ -14,7 +15,11 @@ export class CellEditorCurrencyComponent implements ICellEditorAngularComp, Afte
   value?: number | null;
 
   agInit(params: ICellEditorParams): void {
-    this.value = params.value;
+    if (!params.value && params.charPress && /\d+/.test(params.charPress)) {
+      this.value = parseFloat(params.charPress);
+    } else {
+      this.value = params.value;
+    }
   }
 
   focusIn(): void {
@@ -33,5 +38,9 @@ export class CellEditorCurrencyComponent implements ICellEditorAngularComp, Afte
     setTimeout(() => {
       this.inputElement.nativeElement.focus();
     });
+  }
+
+  onModelChange($event: string | number | null | undefined): void {
+    this.value = isString($event) ? null : $event;
   }
 }

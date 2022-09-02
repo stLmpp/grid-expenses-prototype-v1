@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { AppService } from '../app.service';
 
@@ -9,9 +9,9 @@ import { AppService } from '../app.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GridControlComponent {
-  constructor(private readonly appService: AppService) {}
+  private readonly _appService = inject(AppService);
 
   generateRandomData(): void {
-    this.appService.generateRandomData();
+    this._appService.generateRandomData();
   }
 }

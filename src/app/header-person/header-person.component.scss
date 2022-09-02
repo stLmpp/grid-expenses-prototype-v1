@@ -1,0 +1,24 @@
+.header-person-menu-icons {
+  display: flex;
+  align-items: center;
+  margin-left: 0.5rem;
+}
+
+.mat-icon {
+  &.header-person-edit-icon {
+    opacity: 0;
+    margin-left: 0.25rem;
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+    transition: opacity 0.2s;
+  }
+}
+
+.ag-header-cell.ag-header-active {
+  .mat-icon {
+    &.header-person-edit-icon {
+      opacity: 1;
+    }
+  }
+}

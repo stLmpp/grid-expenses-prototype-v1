@@ -1,0 +1,58 @@
+<div class="ag-cell-label-container" role="presentation">
+  <div class="header-person-menu-icons">
+    <span
+      class="ag-header-icon ag-header-cell-menu-button"
+      #menu
+      *ngIf="params.enableMenu"
+      [attr.aria-hidden]="params.enableMenu ? null : true"
+      (click)="$event.stopPropagation(); params.showColumnMenu(menuElement.nativeElement)"
+    >
+      <span class="ag-icon ag-icon-menu" role="presentation"></span>
+    </span>
+  </div>
+
+  <div class="ag-header-cell-label" role="presentation">
+    <span class="ag-header-cell-text">
+      <input
+        class="ag-input-field-input ag-text-field-input header-person-input-name"
+        #input
+        *ngIf="editing; else notEditing"
+        [(ngModel)]="name"
+        (keydown.enter)="onNameChangeKeyDown($event)"
+        (blur)="onNameChange()"
+        (click)="$event.stopPropagation()"
+        required
+      />
+      <ng-template #notEditing>
+        {{ name }}
+      </ng-template>
+      <mat-icon class="header-person-edit-icon" (click)="onEditName($event)" fontIcon="edit"></mat-icon>
+    </span>
+    <span class="ag-header-icon ag-header-label-icon ag-filter-icon ag-hidden" aria-hidden="true">
+      <span class="ag-icon ag-icon-filter" role="presentation"></span>
+    </span>
+    <span class="ag-sort-indicator-container" *ngIf="params.enableSorting">
+      <span class="ag-sort-indicator-icon ag-sort-order ag-hidden" aria-hidden="true"></span>
+      <span
+        class="ag-sort-indicator-icon ag-sort-ascending-icon"
+        [attr.aria-hidden]="sort !== 'asc' ? true : null"
+        [class.ag-hidden]="sort !== 'asc'"
+      >
+        <span class="ag-icon ag-icon-asc" role="presentation"></span>
+      </span>
+      <span
+        class="ag-sort-indicator-icon ag-sort-descending-icon"
+        [attr.aria-hidden]="sort !== 'desc' ? true : null"
+        [class.ag-hidden]="sort !== 'desc'"
+      >
+        <span class="ag-icon ag-icon-desc" role="presentation"></span>
+      </span>
+      <span class="ag-sort-indicator-icon ag-sort-mixed-icon ag-hidden" aria-hidden="true">
+        <span class="ag-icon ag-icon-none" role="presentation"></span>
+      </span>
+      <span class="ag-sort-indicator-icon ag-sort-none-icon ag-hidden" aria-hidden="true">
+        <span class="ag-icon ag-icon-none" role="presentation"></span>
+      </span>
+    </span>
+  </div>
+</div>

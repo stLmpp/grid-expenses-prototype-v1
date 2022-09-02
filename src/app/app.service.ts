@@ -1,18 +1,20 @@
 import { ColDef } from '@ag-grid-community/core';
 import { formatNumber } from '@angular/common';
-import { Inject, Injectable, LOCALE_ID } from '@angular/core';
+import { inject, Injectable, LOCALE_ID } from '@angular/core';
 import { addDays, format, isDate, isValid, parse } from 'date-fns';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, Subject } from 'rxjs';
 import { arrayUtil, isNumber, random } from 'st-utils';
 import { v4 } from 'uuid';
 
 import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-currency.component';
+import { HeaderPersonComponent, HeaderPersonParams } from './header-person/header-person.component';
 import { Expense } from './models/expense';
 import { Month } from './models/month';
 
 @Injectable({ providedIn: 'root' })
 export class AppService {
-  constructor(@Inject(LOCALE_ID) private readonly localeId: string) {}
+  private readonly _localeId = inject(LOCALE_ID);
+
   private readonly _month$ = new BehaviorSubject<Month>({
     month: new Date().getMonth() + 1,
     expenses: [],
@@ -30,6 +32,7 @@ export class AppService {
       editable: true,
       filter: 'agDateColumnFilter',
       width: 150,
+      pinned: 'left',
       valueFormatter: (params) => {
         if (isDate(params.value)) {
           return format(params.value, 'dd/MM');
@@ -50,7 +53,7 @@ export class AppService {
         return parsed;
       },
     },
-    { field: 'description', editable: true, flex: 1 },
+    { field: 'description', editable: true, width: 400, pinned: 'left' },
   ]);
 
   readonly expenses$ = this._month$.pipe(map((month) => month.expenses));
@@ -59,42 +62,42 @@ export class AppService {
     this._month$.pipe(map((data) => data.people)),
   ]).pipe(
     map(([colDefs, people]) => {
-      const newColDefs: ColDef<Expense>[] = people.map((person) => ({
-        field: person.id,
-        headerName: person.name,
-        editable: true,
-        filter: 'agNumberColumnFilter',
-        cellEditor: CellEditorCurrencyComponent,
-        valueGetter: (params) => params.data!.people[person.id],
-        valueSetter: (params) => {
-          if (!params.newValue) {
-            params.data.people[params.colDef.field!] = 0;
-          } else {
-            let valueParsed = parseFloat(params.newValue);
-            if (Number.isNaN(valueParsed)) {
-              valueParsed = 0;
+      const newColDefs: ColDef<Expense>[] = people.map((person) => {
+        const headerPersonParams: HeaderPersonParams = {
+          person,
+          newPerson$: new Subject(),
+          deletePerson$: new Subject(),
+        };
+        return {
+          field: person.id,
+          headerName: person.name,
+          filter: 'agNumberColumnFilter',
+          cellEditor: CellEditorCurrencyComponent,
+          headerComponent: HeaderPersonComponent,
+          headerComponentParams: headerPersonParams,
+          width: 150,
+          editable: (params) => !params.node.isRowPinned(),
+          valueGetter: (params) => params.data!.people[person.id],
+          valueSetter: (params) => {
+            params.data.people[params.colDef.field!] = params.newValue;
+            return true;
+          },
+          valueFormatter: (params) => {
+            if (isNumber(params.value)) {
+              return formatNumber(params.value, this._localeId, '1.2-2');
             }
-            params.data.people[params.colDef.field!] = valueParsed;
-          }
-          return true;
-        },
-        valueFormatter: (params) => {
-          if (isNumber(params.value)) {
-            return formatNumber(params.value, this.localeId, '1.2-2');
-          }
-          return params.value;
-        },
-      }));
+            return params.value;
+          },
+        };
+      });
       return [...colDefs, ...newColDefs];
     })
   );
 
+  readonly people$ = this._month$.pipe(map((month) => month.people));
+
   private _update(update: (data: Month) => Month): void {
     this._month$.next(update(this._month$.value));
-  }
-
-  private _setExpenses(expenses: Expense[]): void {
-    this._update((data) => ({ ...data, expenses }));
   }
 
   private _updateExpenses(update: (data: Expense[]) => Expense[]): void {
@@ -104,11 +107,10 @@ export class AppService {
   generateRandomData(): void {
     this._update((data) => ({
       ...data,
-      expenses: Array.from({ length: random(5, 25) }, (_, index) => ({
-        id: v4(),
+      expenses: Array.from({ length: random(5, 150) }, (_, index) => ({
+        ...this.getBlankRow(),
         description: `This is a descriptions ${index + 1}`,
         date: addDays(new Date(), index),
-        people: data.people.reduce((acc, item) => ({ ...acc, [item.id]: 0 }), {}),
       })),
     }));
   }
@@ -118,12 +120,11 @@ export class AppService {
   }
 
   getBlankRow(): Expense {
-    const snapshot = this._month$.value;
     return {
       id: v4(),
       description: '',
       date: new Date(),
-      people: snapshot.people.reduce((acc, item) => ({ ...acc, [item.id]: 0 }), {}),
+      people: {},
     };
   }
 
@@ -149,5 +150,20 @@ export class AppService {
 
   move(indexFrom: number, indexTo: number): void {
     this._updateExpenses((data) => arrayUtil(data, 'id').move(indexFrom, indexTo).toArray());
+  }
+
+  addBlankPersonAt(index: number): void {
+    this._update((month) => ({
+      ...month,
+      people: arrayUtil(month.people, 'id').insert({ id: v4(), name: '' }, index).toArray(),
+    }));
+  }
+
+  updatePersonName(id: string, name: string): void {
+    this._update((month) => ({ ...month, people: arrayUtil(month.people, 'id').update(id, { name }).toArray() }));
+  }
+
+  deletePerson(id: string): void {
+    this._update((month) => ({ ...month, people: arrayUtil(month.people, 'id').remove(id).toArray() }));
   }
 }
