@@ -126,8 +126,8 @@ export class HeaderPersonComponent implements IHeaderAngularComp, OnDestroy, Aft
     const index = this.params.columnApi
       .getAllGridColumns()
       .filter((column) => {
-        const params = column.getColDef().headerComponentParams as HeaderPersonParams | null | undefined;
-        return params?.person;
+        const colDef = column.getColDef();
+        return colDef.headerComponentParams && colDef.headerComponent === HeaderPersonComponent;
       })
       .findIndex((column) => column.getColId() === colId);
     if (index >= 0) {
