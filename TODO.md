@@ -1,4 +1,4 @@
-- [ ] Add Cell Editor Date
+- [x] Add Cell Editor Date
 - [ ] Migrate to elf
 - [ ] Add year model to the logic
 - [ ] Undo and Redo
