@@ -22,7 +22,7 @@ import { combineLatest, map, Observable, switchMap } from 'rxjs';
 import { Key } from 'ts-key-enum';
 
 import { AG_GRID_LOCALE_PT_BR } from '../ag-grid-pt-br';
-import { HeaderPersonComponent, HeaderPersonParams } from '../header-person/header-person.component';
+import { HeaderPersonComponent, HeaderPersonParams } from '../ag-grid/header-person/header-person.component';
 import { MatIconDynamicHtmlService } from '../mat-icon-dynamic-html.service';
 import { Expense } from '../models/expense';
 import { RouteParamEnum } from '../models/route-param.enum';

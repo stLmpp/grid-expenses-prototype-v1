@@ -2,11 +2,11 @@ import { ColDef } from '@ag-grid-community/core';
 import { formatNumber } from '@angular/common';
 import { inject, Injectable, LOCALE_ID } from '@angular/core';
 import { selectAllEntities, selectAllEntitiesApply } from '@ngneat/elf-entities';
-import { combineLatest, map, Observable, Subject } from 'rxjs';
+import { map, Observable, Subject } from 'rxjs';
 import { isNumber } from 'st-utils';
 
-import { CellEditorCurrencyComponent } from '../../cell-editor-currency/cell-editor-currency.component';
-import { HeaderPersonComponent, HeaderPersonParams } from '../../header-person/header-person.component';
+import { CellEditorCurrencyComponent } from '../../ag-grid/cell-editor-currency/cell-editor-currency.component';
+import { HeaderPersonComponent, HeaderPersonParams } from '../../ag-grid/header-person/header-person.component';
 import { Expense } from '../../models/expense';
 import { getDefaultColDefs } from '../../month/get-default-col-defs';
 

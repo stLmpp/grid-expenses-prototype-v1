@@ -1,13 +1,14 @@
-import { AgGridModule } from '@ag-grid-community/angular';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+
+import { AgGridModule } from '../ag-grid/ag-grid.module';
 
 import { MonthRoutingModule } from './month-routing.module';
 import { MonthComponent } from './month.component';
-import { MatButtonModule } from '@angular/material/button';
 
 @NgModule({
   declarations: [MonthComponent],
-  imports: [CommonModule, MonthRoutingModule, AgGridModule, MatButtonModule],
+  imports: [AsyncPipe, MonthRoutingModule, AgGridModule.forChild(), MatButtonModule],
 })
 export class MonthModule {}

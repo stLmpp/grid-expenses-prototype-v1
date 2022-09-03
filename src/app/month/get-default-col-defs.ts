@@ -2,9 +2,8 @@ import { ColDef } from '@ag-grid-community/core';
 import { format, isDate } from 'date-fns';
 
 import { requiredValidation } from '../ag-grid-validations';
-import { CellEditorDateComponent } from '../cell-editor-date/cell-editor-date.component';
+import { CellEditorDateComponent } from '../ag-grid/cell-editor-date/cell-editor-date.component';
 import { Expense } from '../models/expense';
-
 
 export function getDefaultColDefs(): ColDef<Expense>[] {
   return [
@@ -39,5 +38,5 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       },
     },
     { field: 'description', editable: true, width: 400, headerName: 'Descrição', ...requiredValidation },
-  ]
+  ];
 }

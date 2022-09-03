@@ -3,8 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { map, Observable, shareReplay } from 'rxjs';
 
 import { RouteParamEnum } from '../../models/route-param.enum';
-
-import { filterNil } from './filter-nil';
+import { filterNil } from '../operators/filter-nil';
 
 interface SelectParamOptions {
   raw?: boolean;

@@ -8,9 +8,8 @@ describe('CellEditorCurrencyComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CellEditorCurrencyComponent ]
-    })
-    .compileComponents();
+      declarations: [CellEditorCurrencyComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(CellEditorCurrencyComponent);
     component = fixture.componentInstance;

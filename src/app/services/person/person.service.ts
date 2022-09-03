@@ -1,10 +1,10 @@
 import { inject, Injectable } from '@angular/core';
+import { deleteEntities, updateEntities } from '@ngneat/elf-entities';
 import { arrayUtil } from 'st-utils';
 import { v4 } from 'uuid';
 
-import { mapEntities } from '../../shared/utils/map-entities';
+import { mapEntities } from '../../shared/store/map-entities';
 import { ExpenseStore } from '../expense/expense.store';
-import { deleteEntities, updateEntities } from '@ngneat/elf-entities';
 
 @Injectable({ providedIn: 'root' })
 export class PersonService {

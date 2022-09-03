@@ -1,12 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { OrArray } from '@ngneat/elf';
-import { addEntities, deleteEntities, setEntities, updateEntities } from '@ngneat/elf-entities';
+import { addEntities, deleteEntities, updateEntities } from '@ngneat/elf-entities';
 import { addDays } from 'date-fns';
 import { arrayUtil, random } from 'st-utils';
 import { v4 } from 'uuid';
 
 import { Expense } from '../../models/expense';
-import { mapEntities } from '../../shared/utils/map-entities';
+import { mapEntities } from '../../shared/store/map-entities';
 
 import { ExpenseStore } from './expense.store';
 
