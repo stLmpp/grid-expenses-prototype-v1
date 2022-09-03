@@ -27,6 +27,7 @@ import { NgxMaskModule } from 'ngx-mask';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-currency.component';
+import { CellEditorDateComponent } from './cell-editor-date/cell-editor-date.component';
 import { GridControlComponent } from './grid-control/grid-control.component';
 import { HeaderPersonComponent } from './header-person/header-person.component';
 
@@ -49,7 +50,13 @@ ModuleRegistry.registerModules([
 ]);
 
 @NgModule({
-  declarations: [AppComponent, GridControlComponent, CellEditorCurrencyComponent, HeaderPersonComponent],
+  declarations: [
+    AppComponent,
+    GridControlComponent,
+    CellEditorCurrencyComponent,
+    HeaderPersonComponent,
+    CellEditorDateComponent,
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,

@@ -11,6 +11,7 @@ import { ChangeDetectionStrategy, Component, inject, OnDestroy, ViewChild, ViewC
 import { combineLatest, map, Observable } from 'rxjs';
 import { Key } from 'ts-key-enum';
 
+import { AG_GRID_LOCALE_PT_BR } from './ag-grid-pt-br';
 import { AppService } from './app.service';
 import { HeaderPersonComponent, HeaderPersonParams } from './header-person/header-person.component';
 import { MatIconDynamicHtmlService } from './mat-icon-dynamic-html.service';
@@ -166,10 +167,7 @@ export class AppComponent implements OnDestroy {
         { statusPanel: 'agAggregationComponent', align: 'right' },
       ],
     },
-    localeText: {
-      thousandSeparator: '.',
-      decimalSeparator: ',',
-    },
+    localeText: AG_GRID_LOCALE_PT_BR,
     getMainMenuItems: (params) => {
       const headerPersonColumns =
         params.columnApi

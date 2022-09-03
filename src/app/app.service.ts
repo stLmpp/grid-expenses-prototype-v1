@@ -1,12 +1,14 @@
 import { ColDef } from '@ag-grid-community/core';
 import { formatNumber } from '@angular/common';
 import { inject, Injectable, LOCALE_ID } from '@angular/core';
-import { addDays, format, isDate, isValid, parse } from 'date-fns';
+import { addDays, format, isDate } from 'date-fns';
 import { BehaviorSubject, combineLatest, map, Observable, Subject } from 'rxjs';
 import { arrayUtil, isNumber, random } from 'st-utils';
 import { v4 } from 'uuid';
 
+import { requiredValidation } from './ag-grid-validations';
 import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-currency.component';
+import { CellEditorDateComponent } from './cell-editor-date/cell-editor-date.component';
 import { HeaderPersonComponent, HeaderPersonParams } from './header-person/header-person.component';
 import { Expense } from './models/expense';
 import { Month } from './models/month';
@@ -25,35 +27,36 @@ export class AppService {
   });
   private readonly _colDefs$ = new BehaviorSubject<ColDef<Expense>[]>([
     {
-      field: 'date',
+      field: '$__rowDrag__$',
+      headerName: '',
+      rowDrag: true,
+      width: 40,
+      filter: false,
+    },
+    {
+      field: '$__selected__$',
+      headerName: '',
       checkboxSelection: true,
       headerCheckboxSelection: true,
-      rowDrag: true,
+      width: 40,
+      filter: false,
+    },
+    {
+      field: 'date',
       editable: true,
       filter: 'agDateColumnFilter',
+      headerName: 'Data',
       width: 150,
-      pinned: 'left',
+      cellEditor: CellEditorDateComponent,
+      ...requiredValidation,
       valueFormatter: (params) => {
         if (isDate(params.value)) {
           return format(params.value, 'dd/MM');
         }
         return params.value;
       },
-      cellEditorParams: {
-        useFormatter: true,
-      },
-      valueParser: (params) => {
-        if (isDate(params.newValue)) {
-          return params.newValue;
-        }
-        const parsed = parse(params.newValue, 'dd/MM', new Date());
-        if (!isValid(parsed)) {
-          return params.oldValue;
-        }
-        return parsed;
-      },
     },
-    { field: 'description', editable: true, width: 400, pinned: 'left' },
+    { field: 'description', editable: true, width: 400, headerName: 'Descrição', ...requiredValidation },
   ]);
 
   readonly expenses$ = this._month$.pipe(map((month) => month.expenses));
