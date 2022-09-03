@@ -1,0 +1,17 @@
+header {
+  height: 10vh;
+  button:not(:last-of-type) {
+    margin-right: 1rem;
+  }
+}
+
+h1 {
+  margin-top: 1rem;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+ag-grid-angular {
+  width: 100%;
+  height: calc(90vh - 4rem);
+}

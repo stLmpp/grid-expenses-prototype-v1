@@ -1,16 +1,20 @@
-<header>
-  <app-grid-control></app-grid-control>
-</header>
+<!--<header>-->
+<!--  <app-grid-control></app-grid-control>-->
+<!--</header>-->
+<!--<main>-->
+<!--  <ag-grid-angular-->
+<!--    class="ag-theme-balham"-->
+<!--    [rowData]="data$ | async"-->
+<!--    [gridOptions]="gridOptions"-->
+<!--    [columnDefs]="colDefs$ | async"-->
+<!--    [pinnedTopRowData]="(pinnedTopRowData$ | async) ?? []"-->
+<!--    (gridReady)="onGridReady($event)"-->
+<!--    (cellValueChanged)="onCellValueChanged($event)"-->
+<!--    (rowDataUpdated)="onRowDataUpdated($event)"-->
+<!--    (rowDragEnd)="onRowDragEnd($event)"-->
+<!--  ></ag-grid-angular>-->
+<!--  {{ year$ | async }} - {{ month$ | async }}-->
+<!--</main>-->
 <main>
-  <ag-grid-angular
-    class="ag-theme-balham"
-    [rowData]="data$ | async"
-    [gridOptions]="gridOptions"
-    [columnDefs]="colDefs$ | async"
-    [pinnedTopRowData]="(pinnedTopRowData$ | async) ?? []"
-    (gridReady)="onGridReady($event)"
-    (cellValueChanged)="onCellValueChanged($event)"
-    (rowDataUpdated)="onRowDataUpdated($event)"
-    (rowDragEnd)="onRowDragEnd($event)"
-  ></ag-grid-angular>
+  <router-outlet></router-outlet>
 </main>

@@ -1608,6 +1608,26 @@
   resolved "https://registry.yarnpkg.com/@leichtgewicht/ip-codec/-/ip-codec-2.0.4.tgz#b2ac626d6cb9c8718ab459166d4bb405b8ffa78b"
   integrity sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==
 
+"@ngneat/elf-devtools@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@ngneat/elf-devtools/-/elf-devtools-1.2.1.tgz#8b137328df8a328cc472f9609477282dc506883b"
+  integrity sha512-emoTCmOxzFI3H04HGpagfaMY9OzmoCvTLoKGvTtN0Fx+JHLhj/HXzSzirAxrkWUwmNTAhCcOmbPPNjAeL1QAuA==
+
+"@ngneat/elf-entities@^4.4.2":
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/@ngneat/elf-entities/-/elf-entities-4.4.2.tgz#9cf88d7b0ee73c6440ec7bb54b7e372b40b77c68"
+  integrity sha512-e9bgL7k9nI419IM1uSHt+WZYesCWhbsbs9+7QVDpXXMKCwCN8lofUX2aATiDxEmw+9riC5o45BGWaSLVMch1QA==
+
+"@ngneat/elf-state-history@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@ngneat/elf-state-history/-/elf-state-history-1.2.1.tgz#38cdddc9a9ecdd754f209cca75613bdceda28a0a"
+  integrity sha512-I/yowFWnQoOmgnMHhQVYnBEByBuqbRTE/BBRAgD5MwZ2MU8FmPe5yDe1DTcdaMr6IS0IoiwEoar2x0OcSRJuJQ==
+
+"@ngneat/elf@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@ngneat/elf/-/elf-2.1.0.tgz#22b852daebbb6680ea8c60d9a7e5f92a72fee9c9"
+  integrity sha512-R5BeYoBQ9DgtjlWAE8eqaYyDI5zgRmND7mbgDdbG1JUisaOopcxLMDKZYI9+HWSHcfKPk+XHgFlKQfAl470lNw==
+
 "@ngtools/webpack@14.2.1":
   version "14.2.1"
   resolved "https://registry.yarnpkg.com/@ngtools/webpack/-/webpack-14.2.1.tgz#c88e23d4f1828467fc644d05e077671914e1cc7b"

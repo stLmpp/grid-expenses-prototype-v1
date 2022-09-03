@@ -11,7 +11,5 @@ import { AppService } from '../app.service';
 export class GridControlComponent {
   private readonly _appService = inject(AppService);
 
-  generateRandomData(): void {
-    this._appService.generateRandomData();
-  }
+  generateRandomData(): void {}
 }

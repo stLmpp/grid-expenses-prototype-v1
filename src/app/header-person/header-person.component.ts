@@ -16,9 +16,9 @@ import {
 import { Subject, take, takeUntil } from 'rxjs';
 import { noop, OrderByDirection } from 'st-utils';
 
-import { AppService } from '../app.service';
 import { Expense } from '../models/expense';
 import { Person } from '../models/person';
+import { PersonService } from '../services/person/person.service';
 
 export interface HeaderPersonParams {
   person: Person;
@@ -36,7 +36,7 @@ type IHeaderPersonParams<T = any> = HeaderPersonParams & IHeaderParams<T>;
   encapsulation: ViewEncapsulation.None,
 })
 export class HeaderPersonComponent implements IHeaderAngularComp, OnDestroy, AfterViewInit {
-  private readonly _appService = inject(AppService);
+  private readonly _personService = inject(PersonService);
 
   private readonly _destroy$ = new Subject<void>();
 
@@ -64,7 +64,7 @@ export class HeaderPersonComponent implements IHeaderAngularComp, OnDestroy, Aft
       this.onAddPerson();
     });
     this.params.deletePerson$.pipe(takeUntil(this._destroy$)).subscribe(() => {
-      this._appService.deletePerson(this.params.person.id);
+      this._personService.delete(this.params.person.id);
     });
   }
 
@@ -131,7 +131,7 @@ export class HeaderPersonComponent implements IHeaderAngularComp, OnDestroy, Aft
       })
       .findIndex((column) => column.getColId() === colId);
     if (index >= 0) {
-      this._appService.addBlankPersonAt(index + 1);
+      this._personService.addBlankAt(index + 1);
     }
   }
 
@@ -151,7 +151,7 @@ export class HeaderPersonComponent implements IHeaderAngularComp, OnDestroy, Aft
       return;
     }
     if (this.name !== this.params.person.name) {
-      this._appService.updatePersonName(this.params.person.id, this.name);
+      this._personService.updateName(this.params.person.id, this.name);
     }
     this.editing = false;
   }

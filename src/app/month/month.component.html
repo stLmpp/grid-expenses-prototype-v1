@@ -1,0 +1,23 @@
+<header>
+  <div class="buttons">
+    <button (click)="previousMonth()" mat-raised-button>Previous month</button>
+    <button (click)="nextMonth()" mat-raised-button>Next month</button>
+    <button (click)="previousYear()" mat-raised-button>Previous year</button>
+    <button (click)="nextYear()" mat-raised-button>Next year</button>
+    <button (click)="generateRandomData()" mat-raised-button>Generate random data</button>
+  </div>
+  <h1>{{ monthInFull$ | async }} - {{ year$ | async }}</h1>
+</header>
+<main>
+  <ag-grid-angular
+    class="ag-theme-balham"
+    [rowData]="expenses$ | async"
+    [gridOptions]="gridOptions"
+    [columnDefs]="colDefs$ | async"
+    [pinnedTopRowData]="(pinnedTopRowData$ | async) ?? []"
+    (gridReady)="onGridReady($event)"
+    (cellValueChanged)="onCellValueChanged($event)"
+    (rowDataUpdated)="onRowDataUpdated($event)"
+    (rowDragEnd)="onRowDragEnd($event)"
+  ></ag-grid-angular>
+</main>
