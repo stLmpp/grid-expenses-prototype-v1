@@ -73,4 +73,12 @@ export class ExpenseService {
       })
     );
   }
+
+  undo(): void {
+    this._expenseStore.history.undo();
+  }
+
+  redo(): void {
+    this._expenseStore.history.redo();
+  }
 }

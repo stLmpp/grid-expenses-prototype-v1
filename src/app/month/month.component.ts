@@ -166,6 +166,23 @@ export class MonthComponent implements OnDestroy {
               params.api.setFocusedCell(newIndex, params.column);
             }
           }
+          break;
+        }
+        case 'z':
+        case 'Z': {
+          if (params.event.ctrlKey) {
+            this._expenseService.undo();
+            return true;
+          }
+          break;
+        }
+        case 'y':
+        case 'Y': {
+          if (params.event.ctrlKey) {
+            this._expenseService.redo();
+            return true;
+          }
+          break;
         }
       }
       return false;

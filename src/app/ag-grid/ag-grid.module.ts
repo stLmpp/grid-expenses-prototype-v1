@@ -23,7 +23,7 @@ import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-
 import { CellEditorDateComponent } from './cell-editor-date/cell-editor-date.component';
 import { HeaderPersonComponent } from './header-person/header-person.component';
 
-const MODULES = [AgGridModuleOriginal, NgxMaskModule, FormsModule, NgIf, MatIconModule];
+const MODULES = [AgGridModuleOriginal, NgxMaskModule.forChild(), FormsModule, NgIf, MatIconModule];
 
 @NgModule({
   declarations: [CellEditorCurrencyComponent, HeaderPersonComponent, CellEditorDateComponent],
