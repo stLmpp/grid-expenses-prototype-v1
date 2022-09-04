@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
-import { OrArray } from '@ngneat/elf';
-import { addEntities, deleteEntities, setEntities, updateEntities } from '@ngneat/elf-entities';
-import { addDays } from 'date-fns';
+import { OrArray, Reducer } from '@ngneat/elf';
+import { addEntities, deleteEntities, getEntity, setEntities, updateEntities } from '@ngneat/elf-entities';
+import { addDays, addMonths } from 'date-fns';
 import { arrayUtil, random } from 'st-utils';
 import { v4 } from 'uuid';
 
 import { Expense } from '../../models/expense';
 import { mapEntities } from '../../shared/store/map-entities';
+import { getInstallmentsFromDescription } from '../../shared/utils/get-installments-from-description';
 
 import { ExpenseStore } from './expense.store';
 
@@ -16,6 +17,33 @@ export class ExpenseService {
 
   update(id: string, partial: Partial<Expense>): void {
     this._expenseStore.update(updateEntities(id, partial));
+  }
+
+  updateDescription(year: number, month: number, id: string, description: string): void {
+    const installmentsInfo = getInstallmentsFromDescription(description);
+    if (!installmentsInfo) {
+      return this.update(id, { description });
+    }
+    const [installment, installmentsQuantity, descriptionWithoutInstallments] = installmentsInfo;
+    const expense = this._expenseStore.query(getEntity(id))!;
+    const updates: Reducer<ExpenseStore['state']>[] = [updateEntities(id, { description })];
+    if (installment === 1) {
+      for (let index = 1; index <= installmentsQuantity; index++) {
+        const nextDate = addMonths(new Date(year, month), index);
+        updates.push(
+          addEntities({
+            month: nextDate.getMonth(),
+            year: nextDate.getFullYear(),
+            description: `${descriptionWithoutInstallments}${installment + index}/${installmentsQuantity}`,
+            id: v4(),
+            people: {},
+            date: expense.date,
+          })
+        );
+      }
+    } else {
+    }
+    this._expenseStore.update(...updates);
   }
 
   generateRandomData(year: number, month: number, qty?: number): void {

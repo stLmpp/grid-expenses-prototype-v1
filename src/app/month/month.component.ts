@@ -276,7 +276,11 @@ export class MonthComponent implements OnDestroy {
   }
 
   onCellValueChanged($event: CellValueChangedEvent<Expense>): void {
-    this._expenseService.update($event.node.id!, $event.data);
+    if ($event.colDef.field === 'description') {
+      this._expenseService.updateDescription(this._getYear(), this._getMonth(), $event.node.id!, $event.newValue);
+    } else {
+      this._expenseService.update($event.node.id!, $event.data);
+    }
   }
 
   onGridReady($event: GridReadyEvent<Expense>): void {
