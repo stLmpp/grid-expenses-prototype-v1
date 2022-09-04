@@ -19,5 +19,10 @@
     (cellValueChanged)="onCellValueChanged($event)"
     (rowDataUpdated)="onRowDataUpdated($event)"
     (rowDragEnd)="onRowDragEnd($event)"
+    (filterChanged)="onFilterChanged($event)"
+    (sortChanged)="onColumnStateChange($event)"
+    (columnMoved)="onColumnStateChange($event)"
+    (columnPinned)="onColumnStateChange($event)"
+    (columnResized)="onColumnStateChange($event)"
   ></ag-grid-angular>
 </main>

@@ -13,6 +13,10 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       rowDrag: true,
       width: 40,
       filter: false,
+      resizable: false,
+      suppressMovable: true,
+      suppressMenu: true,
+      sortable: false,
     },
     {
       field: '$__selected__$',
@@ -21,6 +25,10 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       headerCheckboxSelection: true,
       width: 40,
       filter: false,
+      resizable: false,
+      suppressMovable: true,
+      suppressMenu: true,
+      sortable: false,
     },
     {
       field: 'date',

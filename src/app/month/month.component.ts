@@ -2,6 +2,9 @@ import { AgGridAngular } from '@ag-grid-community/angular';
 import {
   CellValueChangedEvent,
   ColDef,
+  ColumnApi,
+  ColumnState,
+  FilterChangedEvent,
   GridOptions,
   GridReadyEvent,
   RowDataUpdatedEvent,
@@ -18,7 +21,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { addMonths, setMonth, subMonths } from 'date-fns';
-import { combineLatest, map, Observable, switchMap } from 'rxjs';
+import { combineLatest, debounceTime, map, Observable, pairwise, Subject, switchMap, takeUntil, tap } from 'rxjs';
 import { Key } from 'ts-key-enum';
 
 import { AG_GRID_LOCALE_PT_BR } from '../ag-grid-pt-br';
@@ -28,9 +31,17 @@ import { Expense } from '../models/expense';
 import { RouteParamEnum } from '../models/route-param.enum';
 import { ExpenseQuery } from '../services/expense/expense.query';
 import { ExpenseService } from '../services/expense/expense.service';
+import { GridStateQuery } from '../services/grid-state/grid-state.query';
+import { GridStateService } from '../services/grid-state/grid-state.service';
 import { getParam } from '../shared/utils/get-param';
 import { selectParam } from '../shared/utils/select-param';
 import { isRangeSingleRow } from '../shared/utils/utilts';
+
+interface ColumnStateChangedEvent {
+  year: number;
+  month: number;
+  columnsState: ColumnState[];
+}
 
 @Component({
   selector: 'app-month',
@@ -46,8 +57,12 @@ export class MonthComponent implements OnDestroy {
   private readonly _matIconDynamicHtmlService = inject(MatIconDynamicHtmlService);
   private readonly _expenseService = inject(ExpenseService);
   private readonly _expenseQuery = inject(ExpenseQuery);
+  private readonly _gridStateService = inject(GridStateService);
+  private readonly _gridStateQuery = inject(GridStateQuery);
 
   private readonly _month$ = selectParam(RouteParamEnum.month, { nonNullable: true });
+  private readonly _columnStateChanged$ = new Subject<ColumnStateChangedEvent>();
+  private readonly _destroy$ = new Subject<void>();
 
   private readonly _addIcon = 'add';
   private readonly _deleteIcon = 'remove';
@@ -218,6 +233,7 @@ export class MonthComponent implements OnDestroy {
         { statusPanel: 'agAggregationComponent', align: 'right' },
       ],
     },
+    suppressRowClickSelection: true,
     localeText: AG_GRID_LOCALE_PT_BR,
     getMainMenuItems: (params) => {
       const headerPersonColumns =
@@ -271,7 +287,48 @@ export class MonthComponent implements OnDestroy {
 
   onGridReady($event: GridReadyEvent<Expense>): void {
     this._expenseService.generateRandomData(this._getYear(), this._getMonth());
-    console.log($event);
+    this._columnStateChanged$
+      .pipe(takeUntil(this._destroy$), debounceTime(500))
+      .subscribe(({ year, month, columnsState }) => {
+        this._gridStateService.upsertColumnsState(year, month, columnsState);
+      });
+    const originalColumnsState = $event.columnApi.getColumnState();
+    combineLatest([this.year$.pipe(pairwise()), this._month$.pipe(pairwise())])
+      .pipe(
+        debounceTime(0),
+        tap(([[oldYear, year], [oldMonth, month]]) => {
+          const cell = $event.api.getFocusedCell();
+          this._gridStateService.upsertFocusedCell(
+            oldYear,
+            oldMonth,
+            cell ? { rowIndex: cell.rowIndex, colId: cell.column.getColId() } : null
+          );
+          console.log({ focusedCell: $event.api.getFocusedCell(), oldYear, oldMonth });
+          this._gridStateService.addIfNotExists(year, month, originalColumnsState);
+        }),
+        map(([[, year], [, month]]) => [year, month]),
+        switchMap(([year, month]) => this._gridStateQuery.selectState(year, month)),
+        takeUntil(this._destroy$)
+      )
+      .subscribe((state) => {
+        $event.columnApi.applyColumnState({
+          state: state.columnsState,
+          applyOrder: true,
+        });
+        $event.api.setFilterModel(state.filter);
+        if (state.focusedCell) {
+          $event.api.setFocusedCell(state.focusedCell.rowIndex, state.focusedCell.colId);
+          $event.api.ensureIndexVisible(state.focusedCell.rowIndex, 'middle');
+          $event.api.ensureColumnVisible(state.focusedCell.colId, 'middle');
+        } else {
+          $event.api.clearFocusedCell();
+          if ($event.api.getModel().getRowCount()) {
+            $event.api.ensureIndexVisible(0);
+          }
+          const [column] = $event.columnApi.getAllGridColumns();
+          $event.api.ensureColumnVisible(column);
+        }
+      });
   }
 
   onRowDataUpdated($event: RowDataUpdatedEvent<Expense>): void {
@@ -291,6 +348,8 @@ export class MonthComponent implements OnDestroy {
   ngOnDestroy(): void {
     this._matIconDynamicHtmlService.destroy(this._addIcon);
     this._matIconDynamicHtmlService.destroy(this._deleteIcon);
+    this._destroy$.next();
+    this._destroy$.complete();
   }
 
   nextMonth(): void {
@@ -327,5 +386,20 @@ export class MonthComponent implements OnDestroy {
 
   generateRandomData(): void {
     this._expenseService.generateRandomData(this._getYear(), this._getMonth());
+  }
+
+  onFilterChanged($event: FilterChangedEvent<Expense>): void {
+    this._gridStateService.upsertFilter(this._getYear(), this._getMonth(), $event.api.getFilterModel());
+  }
+
+  onColumnStateChange<T extends { columnApi: ColumnApi; source: string }>($event: T): void {
+    if ($event.source === 'api') {
+      return;
+    }
+    this._columnStateChanged$.next({
+      month: this._getMonth(),
+      columnsState: $event.columnApi.getColumnState(),
+      year: this._getYear(),
+    });
   }
 }
