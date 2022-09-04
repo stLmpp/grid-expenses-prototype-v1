@@ -1,5 +1,5 @@
 import { ColDef } from '@ag-grid-community/core';
-import { format, isDate } from 'date-fns';
+import { format, isDate, isEqual } from 'date-fns';
 
 import { requiredValidation } from '../ag-grid-validations';
 import { CellEditorDateComponent } from '../ag-grid/cell-editor-date/cell-editor-date.component';
@@ -44,7 +44,19 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
         }
         return params.value;
       },
+      equals: (valueA, valueB) => {
+        if (isDate(valueA) && isDate(valueB)) {
+          return isEqual(valueA, valueB);
+        }
+        return valueA === valueB;
+      },
     },
-    { field: 'description', editable: true, width: 400, headerName: 'Descrição', ...requiredValidation },
+    {
+      field: 'description',
+      editable: true,
+      width: 400,
+      headerName: 'Descrição',
+      ...requiredValidation,
+    },
   ];
 }

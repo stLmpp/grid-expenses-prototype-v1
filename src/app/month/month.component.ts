@@ -13,6 +13,7 @@ import {
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   inject,
   LOCALE_ID,
   OnDestroy,
@@ -21,7 +22,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { addMonths, setMonth, subMonths } from 'date-fns';
-import { combineLatest, debounceTime, map, Observable, pairwise, Subject, switchMap, takeUntil, tap } from 'rxjs';
+import { auditTime, combineLatest, debounceTime, map, Observable, pairwise, Subject, switchMap, takeUntil } from 'rxjs';
 import { Key } from 'ts-key-enum';
 
 import { AG_GRID_LOCALE_PT_BR } from '../ag-grid-pt-br';
@@ -31,6 +32,7 @@ import { Expense } from '../models/expense';
 import { RouteParamEnum } from '../models/route-param.enum';
 import { ExpenseQuery } from '../services/expense/expense.query';
 import { ExpenseService } from '../services/expense/expense.service';
+import { GlobalListenersService } from '../services/global-listeners/global-listeners.service';
 import { GridStateQuery } from '../services/grid-state/grid-state.query';
 import { GridStateService } from '../services/grid-state/grid-state.service';
 import { getParam } from '../shared/utils/get-param';
@@ -59,6 +61,7 @@ export class MonthComponent implements OnDestroy {
   private readonly _expenseQuery = inject(ExpenseQuery);
   private readonly _gridStateService = inject(GridStateService);
   private readonly _gridStateQuery = inject(GridStateQuery);
+  private readonly _globalListenersService = inject(GlobalListenersService);
 
   private readonly _month$ = selectParam(RouteParamEnum.month, { nonNullable: true });
   private readonly _columnStateChanged$ = new Subject<ColumnStateChangedEvent>();
@@ -69,7 +72,8 @@ export class MonthComponent implements OnDestroy {
 
   private readonly _intl = Intl.DateTimeFormat(this._localeId, { month: 'long' });
 
-  @ViewChild(AgGridAngular) readonly agGrid?: AgGridAngular;
+  @ViewChild(AgGridAngular) readonly agGrid?: AgGridAngular<Expense>;
+  @ViewChild(AgGridAngular, { read: ElementRef }) readonly agGridElement?: ElementRef<HTMLElement>;
 
   readonly year$ = selectParam(RouteParamEnum.year, { nonNullable: true });
   readonly monthInFull$ = this._month$.pipe(map((month) => this._intl.format(setMonth(new Date(), month - 1))));
@@ -89,30 +93,6 @@ export class MonthComponent implements OnDestroy {
         return false;
       }
       switch (params.event.key) {
-        case '-': {
-          if (params.event.ctrlKey || params.event.metaKey) {
-            params.event.preventDefault();
-            if (isRangeSingleRow(params.api)) {
-              const lastIndex = params.api.getModel().getRowCount() - 1;
-              this._expenseService.delete(this._getYear(), this._getMonth(), params.node.id!);
-              if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
-                params.api.setFocusedCell(lastIndex - 1, params.column);
-              }
-            }
-          }
-          break;
-        }
-        case Key.Delete: {
-          const selectedRows = params.api.getSelectedRows();
-          if (selectedRows.length) {
-            this._expenseService.delete(
-              this._getYear(),
-              this._getMonth(),
-              selectedRows.map((row) => row.id)
-            );
-          }
-          break;
-        }
         case ' ': {
           const range = params.api.getCellRanges();
           if (range) {
@@ -172,6 +152,34 @@ export class MonthComponent implements OnDestroy {
           }
           break;
         }
+        case Key.Delete: {
+          const selectedRows = params.api.getSelectedRows();
+          if (selectedRows.length) {
+            const lastIndex = params.api.getModel().getRowCount() - 1;
+            this._expenseService.delete(
+              this._getYear(),
+              this._getMonth(),
+              selectedRows.map((row) => row.id)
+            );
+            if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
+              params.api.setFocusedCell(lastIndex - 1, params.column);
+            }
+          }
+          break;
+        }
+        case '-': {
+          if (params.event.ctrlKey || params.event.metaKey) {
+            params.event.preventDefault();
+            if (isRangeSingleRow(params.api)) {
+              const lastIndex = params.api.getModel().getRowCount() - 1;
+              this._expenseService.delete(this._getYear(), this._getMonth(), params.node.id!);
+              if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
+                params.api.setFocusedCell(lastIndex - 1, params.column);
+              }
+            }
+          }
+          break;
+        }
         case '+': {
           if (params.event.ctrlKey || params.event.metaKey) {
             params.event.preventDefault();
@@ -180,22 +188,6 @@ export class MonthComponent implements OnDestroy {
               this._expenseService.addBlankAt(this._getYear(), this._getMonth(), newIndex);
               params.api.setFocusedCell(newIndex, params.column);
             }
-          }
-          break;
-        }
-        case 'z':
-        case 'Z': {
-          if (params.event.ctrlKey) {
-            this._expenseService.undo();
-            return true;
-          }
-          break;
-        }
-        case 'y':
-        case 'Y': {
-          if (params.event.ctrlKey) {
-            this._expenseService.redo();
-            return true;
           }
           break;
         }
@@ -235,6 +227,8 @@ export class MonthComponent implements OnDestroy {
     },
     suppressRowClickSelection: true,
     localeText: AG_GRID_LOCALE_PT_BR,
+    enableRangeHandle: true,
+    enableFillHandle: true,
     getMainMenuItems: (params) => {
       const headerPersonColumns =
         params.columnApi
@@ -286,29 +280,31 @@ export class MonthComponent implements OnDestroy {
   }
 
   onGridReady($event: GridReadyEvent<Expense>): void {
-    this._expenseService.generateRandomData(this._getYear(), this._getMonth());
+    // this._expenseService.generateRandomData(this._getYear(), this._getMonth(), 1);
+    this._expenseService.generateRandomDataMultipleMonths();
     this._columnStateChanged$
-      .pipe(takeUntil(this._destroy$), debounceTime(500))
+      .pipe(takeUntil(this._destroy$), debounceTime(250))
       .subscribe(({ year, month, columnsState }) => {
         this._gridStateService.upsertColumnsState(year, month, columnsState);
       });
     const originalColumnsState = $event.columnApi.getColumnState();
+    this._gridStateService.addIfNotExists(this._getYear(), this._getMonth(), originalColumnsState);
     combineLatest([this.year$.pipe(pairwise()), this._month$.pipe(pairwise())])
+      .pipe(takeUntil(this._destroy$))
+      .subscribe(([[oldYear, year], [oldMonth, month]]) => {
+        const cell = $event.api.getFocusedCell();
+        this._gridStateService.upsertFocusedCell(
+          oldYear,
+          oldMonth,
+          cell ? { rowIndex: cell.rowIndex, colId: cell.column.getColId() } : null
+        );
+        this._gridStateService.addIfNotExists(year, month, originalColumnsState);
+      });
+    combineLatest([this.year$, this._month$])
       .pipe(
-        debounceTime(0),
-        tap(([[oldYear, year], [oldMonth, month]]) => {
-          const cell = $event.api.getFocusedCell();
-          this._gridStateService.upsertFocusedCell(
-            oldYear,
-            oldMonth,
-            cell ? { rowIndex: cell.rowIndex, colId: cell.column.getColId() } : null
-          );
-          console.log({ focusedCell: $event.api.getFocusedCell(), oldYear, oldMonth });
-          this._gridStateService.addIfNotExists(year, month, originalColumnsState);
-        }),
-        map(([[, year], [, month]]) => [year, month]),
         switchMap(([year, month]) => this._gridStateQuery.selectState(year, month)),
-        takeUntil(this._destroy$)
+        takeUntil(this._destroy$),
+        auditTime(0)
       )
       .subscribe((state) => {
         $event.columnApi.applyColumnState({
@@ -321,14 +317,17 @@ export class MonthComponent implements OnDestroy {
           $event.api.ensureIndexVisible(state.focusedCell.rowIndex, 'middle');
           $event.api.ensureColumnVisible(state.focusedCell.colId, 'middle');
         } else {
-          $event.api.clearFocusedCell();
           if ($event.api.getModel().getRowCount()) {
             $event.api.ensureIndexVisible(0);
+            $event.api.setFocusedCell(0, $event.columnApi.getAllGridColumns()[0]);
           }
           const [column] = $event.columnApi.getAllGridColumns();
           $event.api.ensureColumnVisible(column);
         }
       });
+    this._globalListenersService.documentKeydown$.pipe(takeUntil(this._destroy$)).subscribe((event) => {
+      this.onGridKeydown(event);
+    });
   }
 
   onRowDataUpdated($event: RowDataUpdatedEvent<Expense>): void {
@@ -401,5 +400,24 @@ export class MonthComponent implements OnDestroy {
       columnsState: $event.columnApi.getColumnState(),
       year: this._getYear(),
     });
+  }
+
+  onGridKeydown($event: KeyboardEvent): void {
+    switch ($event.key) {
+      case 'z':
+      case 'Z': {
+        if ($event.ctrlKey) {
+          this._expenseService.undo();
+        }
+        break;
+      }
+      case 'y':
+      case 'Y': {
+        if ($event.ctrlKey) {
+          this._expenseService.redo();
+        }
+        break;
+      }
+    }
   }
 }

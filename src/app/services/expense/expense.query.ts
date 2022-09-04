@@ -63,6 +63,7 @@ export class ExpenseQuery {
     return this._expenseStore.pipe(
       selectAllEntitiesApply({
         filterEntity: (entity) => entity.year === year && entity.month === month,
+        mapEntity: (entity) => ({ ...entity, date: new Date(entity.date), people: { ...entity.people } }),
       })
     );
   }

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { OrArray } from '@ngneat/elf';
-import { addEntities, deleteEntities, updateEntities } from '@ngneat/elf-entities';
+import { addEntities, deleteEntities, setEntities, updateEntities } from '@ngneat/elf-entities';
 import { addDays } from 'date-fns';
 import { arrayUtil, random } from 'st-utils';
 import { v4 } from 'uuid';
@@ -18,13 +18,32 @@ export class ExpenseService {
     this._expenseStore.update(updateEntities(id, partial));
   }
 
-  generateRandomData(year: number, month: number): void {
-    const newEntities: Expense[] = Array.from({ length: random(5, 25) }, (_, index) => ({
+  generateRandomData(year: number, month: number, qty?: number): void {
+    const newEntities: Expense[] = Array.from({ length: qty ?? random(5, 25) }, (_, index) => ({
       ...this.getBlankRow(year, month),
       description: `This is a descriptions ${index + 1}`,
       date: addDays(new Date(year, month - 1), index),
     }));
     this._expenseStore.update(addEntities(newEntities));
+  }
+
+  generateRandomDataMultipleMonths(): void {
+    const year = new Date().getFullYear();
+    const newEntities: Expense[] = Array.from(
+      {
+        length: random(150, 500),
+      },
+      (_, index) => {
+        const y = random(year - 1, year + 1);
+        const m = random(1, 12);
+        return {
+          ...this.getBlankRow(y, m),
+          description: `This is a descriptions ${index + 1}`,
+          date: addDays(new Date(y, m - 1), index),
+        };
+      }
+    );
+    this._expenseStore.update(setEntities(newEntities));
   }
 
   getBlankRow(year: number, month: number): Expense {

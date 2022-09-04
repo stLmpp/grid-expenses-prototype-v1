@@ -2,40 +2,26 @@ import { ColumnState } from '@ag-grid-community/core';
 import { inject, Injectable } from '@angular/core';
 import { getEntity, upsertEntities } from '@ngneat/elf-entities';
 
-import { ExpenseStore, GridStateModelFocusedCell } from '../expense/expense.store';
+import { GridStateModelFocusedCell, GridStateStore } from './grid-state.store';
 
 @Injectable({ providedIn: 'root' })
 export class GridStateService {
-  private readonly _expenseStore = inject(ExpenseStore);
+  private readonly _gridStateStore = inject(GridStateStore);
 
   upsertFilter(year: number, month: number, filter: Record<string, any> | null): void {
-    this._expenseStore.update(
-      upsertEntities({ filter, year, month, id: `${year}-${month}` }, { ref: this._expenseStore.gridStateEntitiesRef })
-    );
+    this._gridStateStore.update(upsertEntities({ filter, year, month, id: `${year}-${month}` }));
   }
 
   upsertColumnsState(year: number, month: number, columnsState: ColumnState[]): void {
-    this._expenseStore.update(
-      upsertEntities(
-        { columnsState, month, year, id: `${year}-${month}` },
-        { ref: this._expenseStore.gridStateEntitiesRef }
-      )
-    );
+    this._gridStateStore.update(upsertEntities({ columnsState, month, year, id: `${year}-${month}` }));
   }
 
   upsertFocusedCell(year: number, month: number, focusedCell: GridStateModelFocusedCell | null): void {
-    this._expenseStore.update(
-      upsertEntities(
-        { year, month, id: `${year}-${month}`, focusedCell },
-        { ref: this._expenseStore.gridStateEntitiesRef }
-      )
-    );
+    this._gridStateStore.update(upsertEntities({ year, month, id: `${year}-${month}`, focusedCell }));
   }
 
   addIfNotExists(year: number, month: number, columnState: ColumnState[]): void {
-    const entity = this._expenseStore.query(
-      getEntity(`${year}-${month}`, { ref: this._expenseStore.gridStateEntitiesRef })
-    );
+    const entity = this._gridStateStore.query(getEntity(`${year}-${month}`));
     if (entity) {
       return;
     }
