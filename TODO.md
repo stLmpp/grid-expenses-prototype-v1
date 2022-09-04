@@ -1,4 +1,6 @@
 - [x] Add Cell Editor Date
-- [ ] Migrate to elf
-- [ ] Undo and Redo
-- [ ] Add year model to the logic
+- [x] Migrate to elf
+- [x] Undo and Redo
+- [x] Add year model to the logic
+- [ ] Figure out a way to add new lines when no lines are present
+- [ ] Make logic to replicate installments to next months
