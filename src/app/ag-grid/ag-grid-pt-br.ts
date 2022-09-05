@@ -113,7 +113,7 @@ export const AG_GRID_LOCALE_PT_BR = {
   pivotColumnGroupTotals: 'Total de grupo de colunas',
 
   // Enterprise Menu (Charts)
-  pivotChartAndPivotMode: 'Grafíco Pivô & Modo Pivô',
+  pivotChartAndPivotMode: 'Gráfico Pivô & Modo Pivô',
   pivotChart: 'Gráfico Pivô',
   chartRange: 'Alcance do gráfico',
 
