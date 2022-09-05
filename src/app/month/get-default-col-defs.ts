@@ -1,38 +1,48 @@
-import { ColDef } from '@ag-grid-community/core';
+import { ColDef, ColumnFunctionCallbackParams } from '@ag-grid-community/core';
 import { format, isDate, isEqual } from 'date-fns';
 
-import { requiredValidation } from '../ag-grid-validations';
+import { requiredValidation } from '../ag-grid/ag-grid-validations';
 import { CellEditorDateComponent } from '../ag-grid/cell-editor-date/cell-editor-date.component';
+import { AgGridClassesEnum } from '../ag-grid/classes.enum';
 import { Expense } from '../models/expense';
+
+function isEditable<T extends ColumnFunctionCallbackParams<Expense>>(params: T): boolean {
+  return !params.node.isRowPinned() && (!params.data?.installmentId || !!params.data.isFirstInstallment);
+}
+
+const controlDefaultColDef: ColDef<Expense> = {
+  headerName: '',
+  width: 40,
+  filter: false,
+  resizable: false,
+  suppressMovable: true,
+  suppressMenu: true,
+  sortable: false,
+  cellClass: AgGridClassesEnum.NotEditable,
+  suppressFillHandle: true,
+  suppressCellFlash: true,
+  suppressSizeToFit: true,
+  suppressPaste: true,
+  suppressAutoSize: true,
+};
 
 export function getDefaultColDefs(): ColDef<Expense>[] {
   return [
     {
       field: '$__rowDrag__$',
-      headerName: '',
       rowDrag: true,
-      width: 40,
-      filter: false,
-      resizable: false,
-      suppressMovable: true,
-      suppressMenu: true,
-      sortable: false,
+      ...controlDefaultColDef,
     },
     {
       field: '$__selected__$',
-      headerName: '',
       checkboxSelection: true,
       headerCheckboxSelection: true,
-      width: 40,
-      filter: false,
-      resizable: false,
-      suppressMovable: true,
-      suppressMenu: true,
-      sortable: false,
+      ...controlDefaultColDef,
     },
     {
       field: 'date',
-      editable: true,
+      editable: (params) => isEditable(params),
+      cellClass: (params) => (isEditable(params) ? null : AgGridClassesEnum.NotEditable),
       filter: 'agDateColumnFilter',
       headerName: 'Data',
       width: 150,
@@ -53,7 +63,8 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
     },
     {
       field: 'description',
-      editable: true,
+      editable: (params) => isEditable(params),
+      cellClass: (params) => (isEditable(params) ? null : AgGridClassesEnum.NotEditable),
       width: 400,
       headerName: 'Descrição',
       ...requiredValidation,

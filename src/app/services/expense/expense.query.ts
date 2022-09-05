@@ -6,6 +6,7 @@ import { map, Observable, Subject } from 'rxjs';
 import { isNumber } from 'st-utils';
 
 import { CellEditorCurrencyComponent } from '../../ag-grid/cell-editor-currency/cell-editor-currency.component';
+import { AgGridClassesEnum } from '../../ag-grid/classes.enum';
 import { HeaderPersonComponent, HeaderPersonParams } from '../../ag-grid/header-person/header-person.component';
 import { Expense } from '../../models/expense';
 import { getDefaultColDefs } from '../../month/get-default-col-defs';
@@ -41,11 +42,21 @@ export class ExpenseQuery {
           headerComponent: HeaderPersonComponent,
           headerComponentParams: headerPersonParams,
           width: 150,
+          cellClass: (params) => {
+            const classes = [AgGridClassesEnum.PersonValue];
+            if (params.node.isRowPinned()) {
+              classes.push(AgGridClassesEnum.NotEditable);
+            }
+            return classes;
+          },
           editable: (params) => !params.node.isRowPinned(),
           valueGetter: (params) => params.data!.people[person.id],
           valueSetter: (params) => {
-            params.data.people[params.colDef.field!] = params.newValue;
-            return true;
+            const changed = params.data.people[params.colDef.field!] !== params.newValue;
+            if (changed) {
+              params.data.people[params.colDef.field!] = params.newValue;
+            }
+            return changed;
           },
           valueFormatter: (params) => {
             if (isNumber(params.value)) {

@@ -25,7 +25,7 @@ import { addMonths, setMonth, subMonths } from 'date-fns';
 import { auditTime, combineLatest, debounceTime, map, Observable, pairwise, Subject, switchMap, takeUntil } from 'rxjs';
 import { Key } from 'ts-key-enum';
 
-import { AG_GRID_LOCALE_PT_BR } from '../ag-grid-pt-br';
+import { AG_GRID_LOCALE_PT_BR } from '../ag-grid/ag-grid-pt-br';
 import { HeaderPersonComponent, HeaderPersonParams } from '../ag-grid/header-person/header-person.component';
 import { MatIconDynamicHtmlService } from '../mat-icon-dynamic-html.service';
 import { Expense } from '../models/expense';
@@ -227,7 +227,6 @@ export class MonthComponent implements OnDestroy {
     },
     suppressRowClickSelection: true,
     localeText: AG_GRID_LOCALE_PT_BR,
-    enableRangeHandle: true,
     enableFillHandle: true,
     getMainMenuItems: (params) => {
       const headerPersonColumns =
@@ -277,15 +276,16 @@ export class MonthComponent implements OnDestroy {
 
   onCellValueChanged($event: CellValueChangedEvent<Expense>): void {
     if ($event.colDef.field === 'description') {
-      this._expenseService.updateDescription(this._getYear(), this._getMonth(), $event.node.id!, $event.newValue);
+      this._expenseService.updateDescription(this._getYear(), this._getMonth(), $event.data);
+    } else if ($event.colDef.headerComponent === HeaderPersonComponent) {
+      this._expenseService.updatePersonValue(this._getYear(), this._getMonth(), $event.data);
     } else {
       this._expenseService.update($event.node.id!, $event.data);
     }
   }
 
   onGridReady($event: GridReadyEvent<Expense>): void {
-    // this._expenseService.generateRandomData(this._getYear(), this._getMonth(), 1);
-    this._expenseService.generateRandomDataMultipleMonths();
+    this._expenseService.generateRandomData(this._getYear(), this._getMonth(), 1);
     this._columnStateChanged$
       .pipe(takeUntil(this._destroy$), debounceTime(250))
       .subscribe(({ year, month, columnsState }) => {
