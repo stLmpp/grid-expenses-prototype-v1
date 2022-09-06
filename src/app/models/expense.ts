@@ -1,3 +1,5 @@
+import { SetNonNullable, SetRequired } from 'type-fest';
+
 export interface Expense {
   id: string;
   date: Date;
@@ -10,3 +12,9 @@ export interface Expense {
   installmentQuantity?: number | null;
   installment?: number | null;
 }
+
+export type ExpenseInstallmentKeys = keyof Pick<
+  Expense,
+  'installment' | 'installmentId' | 'installmentQuantity' | 'isFirstInstallment'
+>;
+export type ExpenseInstallment = SetRequired<SetNonNullable<Expense, ExpenseInstallmentKeys>, ExpenseInstallmentKeys>;

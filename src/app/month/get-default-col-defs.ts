@@ -1,10 +1,14 @@
 import { ColDef, ColumnFunctionCallbackParams } from '@ag-grid-community/core';
+import { inject } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { format, isDate, isEqual } from 'date-fns';
 
 import { requiredValidation } from '../ag-grid/ag-grid-validations';
 import { CellEditorDateComponent } from '../ag-grid/cell-editor-date/cell-editor-date.component';
 import { AgGridClassesEnum } from '../ag-grid/classes.enum';
 import { Expense } from '../models/expense';
+import { InstallmentUpdateAllowedEnum } from '../services/installment/installment-update-allowed.enum';
+import { isDescriptionUpdateAllowed } from '../services/installment/is-description-update-allowed';
 
 function isEditable<T extends ColumnFunctionCallbackParams<Expense>>(params: T): boolean {
   return !params.node.isRowPinned() && (!params.data?.installmentId || !!params.data.isFirstInstallment);
@@ -27,6 +31,8 @@ const controlDefaultColDef: ColDef<Expense> = {
 };
 
 export function getDefaultColDefs(): ColDef<Expense>[] {
+  const matSnackBar = inject(MatSnackBar);
+
   return [
     {
       field: '$__rowDrag__$',
@@ -67,6 +73,16 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       cellClass: (params) => (isEditable(params) ? null : AgGridClassesEnum.NotEditable),
       width: 400,
       headerName: 'Descrição',
+      valueSetter: (params) => {
+        const updateAllowed = isDescriptionUpdateAllowed(params.data, params.newValue);
+        const updateAllowedBool = updateAllowed === InstallmentUpdateAllowedEnum.UpdateAllowed;
+        if (updateAllowedBool) {
+          params.data.description = params.newValue;
+        } else {
+          matSnackBar.open('Update not allowed', 'Close');
+        }
+        return updateAllowedBool;
+      },
       ...requiredValidation,
     },
   ];

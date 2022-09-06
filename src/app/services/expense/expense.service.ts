@@ -1,242 +1,84 @@
 import { inject, Injectable } from '@angular/core';
-import { OrArray, Reducer } from '@ngneat/elf';
+import { OrArray } from '@ngneat/elf';
 import {
   addEntities,
   deleteEntities,
-  deleteEntitiesByPredicate,
-  getAllEntitiesApply,
   setEntities,
   updateEntities,
   updateEntitiesByPredicate,
 } from '@ngneat/elf-entities';
-import { addDays, addMonths, isBefore } from 'date-fns';
+import { addDays, isBefore } from 'date-fns';
 import { arrayUtil, random } from 'st-utils';
 import { v4 } from 'uuid';
 
 import { Expense } from '../../models/expense';
 import { mapEntities } from '../../shared/store/map-entities';
 import { getInstallmentsFromDescription } from '../../shared/utils/get-installments-from-description';
+import { InstallmentService } from '../installment/installment.service';
+import { isExpenseInstallment } from '../installment/is-expense-installment';
 
 import { ExpenseStore } from './expense.store';
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
   private readonly _expenseStore = inject(ExpenseStore);
+  private readonly _installmentService = inject(InstallmentService);
 
   update(id: string, partial: Partial<Expense>): void {
     this._expenseStore.update(updateEntities(id, partial));
   }
 
   updateDescription(year: number, month: number, expense: Expense): void {
-    // TODO refactor this function to be smaller
-    // TODO handle case where the installment number changed with isFirstInstallment
-    // TODO delete item
+    // TODO delete future installments
     const installmentsInfo = getInstallmentsFromDescription(expense.description);
     if (!installmentsInfo) {
-      if (expense.installmentId) {
-        this._expenseStore.update(
-          deleteEntitiesByPredicate(
-            (_expense) => _expense.installmentId === expense.installmentId && !_expense.isFirstInstallment
-          ),
-          updateEntities(expense.id, {
-            description: expense.description,
-            installmentId: null,
-            installment: null,
-            installmentQuantity: null,
-            isFirstInstallment: null,
-          })
-        );
-        return;
-      } else {
-        return this.update(expense.id, expense);
+      // No installment was found on description
+      if (isExpenseInstallment(expense)) {
+        // Has previous installment in the expense
+        // So we need to delete all future installments
+        // And update the description
+        return this._installmentService.deleteAllInstallments(expense);
       }
+      // Just update the description
+      return this.update(expense.id, expense);
     }
     const [installment, installmentQuantity, descriptionWithoutInstallments] = installmentsInfo;
-    if (expense.installmentId) {
-      if (expense.installmentQuantity !== installmentQuantity) {
-        if (installmentQuantity < expense.installmentQuantity!) {
-          this._expenseStore.update(
-            updateEntities(expense.id, { description: expense.description, installmentQuantity }),
-            deleteEntitiesByPredicate(
-              (_expense) =>
-                !!_expense.installmentId &&
-                _expense.installmentId === expense.installmentId &&
-                _expense.installment! > installmentQuantity
-            ),
-            updateEntitiesByPredicate(
-              (_expense) =>
-                !!_expense.installmentId &&
-                _expense.installmentId === expense.installmentId &&
-                !_expense.isFirstInstallment,
-              (_expense) => ({
-                ..._expense,
-                description: `${descriptionWithoutInstallments}${_expense.installment}/${installmentQuantity}`,
-              })
-            )
-          );
-        } else if (installmentQuantity > expense.installmentQuantity!) {
-          const newEntities: Expense[] = [];
-          for (let index = expense.installmentQuantity!; index < installmentQuantity; index++) {
-            const nextDate = addMonths(new Date(year, month - 1), index);
-            newEntities.push({
-              month: nextDate.getMonth() + 1,
-              year: nextDate.getFullYear(),
-              description: `${descriptionWithoutInstallments}${installment + index}/${installmentQuantity}`,
-              id: v4(),
-              people: expense.people,
-              date: expense.date,
-              installmentId: expense.installmentId,
-              installment: installment + index,
-            });
-          }
-          this._expenseStore.update(
-            updateEntities(expense.id, { description: expense.description, installmentQuantity }),
-            addEntities(newEntities),
-            updateEntitiesByPredicate(
-              (_expense) =>
-                !!_expense.installmentId &&
-                _expense.installmentId === expense.installmentId &&
-                !_expense.isFirstInstallment &&
-                _expense.installment! < installmentQuantity,
-              (_expense) => ({
-                ..._expense,
-                description: `${descriptionWithoutInstallments}${_expense.installment}/${installmentQuantity}`,
-              })
-            )
-          );
-        }
-      } else if (installment !== expense.installment) {
-        if (installment > expense.installment!) {
-          const difference = installment - expense.installment!;
-          this._expenseStore.update(
-            updateEntities(expense.id, { description: expense.description, installment }),
-            deleteEntitiesByPredicate(
-              (_expense) =>
-                !!_expense.installmentId &&
-                _expense.installmentId === expense.installmentId &&
-                !_expense.isFirstInstallment &&
-                _expense.installment! + difference > installmentQuantity
-            ),
-            updateEntitiesByPredicate(
-              (_expense) =>
-                !!_expense.installmentId &&
-                _expense.installmentId === expense.installmentId &&
-                !_expense.isFirstInstallment &&
-                _expense.installment! < installmentQuantity,
-              (_expense) => ({
-                ..._expense,
-                description: `${descriptionWithoutInstallments}${
-                  _expense.installment! + difference
-                }/${installmentQuantity}`,
-                installment: _expense.installment! + difference,
-              })
-            )
-          );
-        } else {
-          const difference = expense.installment! - installment;
-          const lastInstallment = arrayUtil(
-            this._expenseStore.query(
-              getAllEntitiesApply({
-                filterEntity: (_expense) => _expense.installmentId === expense.installmentId,
-              })
-            ),
-            'id'
-          )
-            .orderBy(['year', 'month'])
-            .getLast()!;
-          const newEntities: Expense[] = [];
-
-          for (let index = installmentQuantity; index >= difference; index--) {
-            const nextDate = addMonths(new Date(year, month - 1), index);
-            newEntities.push({
-              month: nextDate.getMonth() + 1,
-              year: nextDate.getFullYear(),
-              description: `${descriptionWithoutInstallments}${
-                lastInstallment.installment! + (index - 1)
-              }/${installmentQuantity}`,
-              id: v4(),
-              people: expense.people,
-              date: expense.date,
-              installmentId: expense.installmentId,
-              installment: lastInstallment.installment! + (index - 1),
-            });
-          }
-          this._expenseStore.update(
-            updateEntities(expense.id, { description: expense.description, installment }),
-            addEntities(newEntities)
-          );
-          // this._expenseStore.update(
-          //   updateEntities(expense.id, { description: expense.description, installment }),
-          //   deleteEntitiesByPredicate(
-          //     (_expense) =>
-          //       !!_expense.installmentId &&
-          //       _expense.installmentId === expense.installmentId &&
-          //       !_expense.isFirstInstallment &&
-          //       _expense.installment! + difference > installmentQuantity
-          //   ),
-          //   updateEntitiesByPredicate(
-          //     (_expense) =>
-          //       !!_expense.installmentId &&
-          //       _expense.installmentId === expense.installmentId &&
-          //       !_expense.isFirstInstallment &&
-          //       _expense.installment! < installmentQuantity,
-          //     (_expense) => ({
-          //       ..._expense,
-          //       description: `${descriptionWithoutInstallments}${
-          //         _expense.installment! + difference
-          //       }/${installmentQuantity}`,
-          //       installment: _expense.installment! + difference,
-          //     })
-          //   )
-          // );
-        }
-      } else {
-        this._expenseStore.update(
-          updateEntities(expense.id, { description: expense.description, installmentQuantity }),
-          updateEntitiesByPredicate(
-            (_expense) =>
-              !!_expense.installmentId &&
-              _expense.installmentId === expense.installmentId &&
-              !_expense.isFirstInstallment,
-            (_expense) => ({
-              ..._expense,
-              description: `${descriptionWithoutInstallments}${_expense.installment}/${installmentQuantity}`,
-            })
-          )
+    if (isExpenseInstallment(expense)) {
+      // Expense already has installment configuration
+      if (installmentQuantity < expense.installmentQuantity) {
+        // Installment quantity is lower than the current installment quantity
+        return this._installmentService.installmentQuantityLower(
+          expense,
+          installmentQuantity,
+          descriptionWithoutInstallments
         );
       }
-      return;
+      // Installment quantity is higher than the current installment quantity
+      if (installmentQuantity > expense.installmentQuantity) {
+        return this._installmentService.installmentQuantityHigher(
+          expense,
+          installmentQuantity,
+          year,
+          month,
+          descriptionWithoutInstallments
+        );
+      }
+      // Installment quantity is equal, so we just need to update the description
+      // of all installments
+      return this._installmentService.updateAllDescriptions(
+        expense,
+        descriptionWithoutInstallments,
+        installmentQuantity
+      );
     }
-    const installmentId = v4();
-    const updates: Reducer<ExpenseStore['state']>[] = [
-      updateEntities(expense.id, {
-        description: expense.description,
-        installmentId,
-        installment,
-        installmentQuantity,
-        isFirstInstallment: true,
-      }),
-    ];
-    const newEntities: Expense[] = [];
-    for (
-      let installmentIndex = installment, index = 1;
-      installmentIndex < installmentQuantity;
-      installmentIndex++, index++
-    ) {
-      const nextDate = addMonths(new Date(year, month - 1), index);
-      newEntities.push({
-        month: nextDate.getMonth() + 1,
-        year: nextDate.getFullYear(),
-        description: `${descriptionWithoutInstallments}${installment + index}/${installmentQuantity}`,
-        id: v4(),
-        people: expense.people,
-        date: expense.date,
-        installmentId,
-        installment: installment + index,
-      });
-    }
-    updates.push(addEntities(newEntities));
-    this._expenseStore.update(...updates);
+    this._installmentService.addInstallments(
+      installment,
+      installmentQuantity,
+      year,
+      month,
+      descriptionWithoutInstallments,
+      expense
+    );
   }
 
   generateRandomData(year: number, month: number, qty?: number): void {
