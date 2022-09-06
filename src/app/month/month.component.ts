@@ -88,6 +88,9 @@ export class MonthComponent implements OnDestroy {
     resizable: true,
     editable: false,
     floatingFilter: true,
+    // TODO DEBUG
+    tooltipValueGetter: (params) =>
+      Object.entries(params.data!).reduce((acc, [key, value]) => `${acc}${key}: ${JSON.stringify(value)}\n`, ''),
     suppressKeyboardEvent: (params) => {
       if (params.editing) {
         return false;
@@ -228,6 +231,7 @@ export class MonthComponent implements OnDestroy {
     suppressRowClickSelection: true,
     localeText: AG_GRID_LOCALE_PT_BR,
     enableFillHandle: true,
+    enableBrowserTooltips: true, // TODO DEBUG
     getMainMenuItems: (params) => {
       const headerPersonColumns =
         params.columnApi

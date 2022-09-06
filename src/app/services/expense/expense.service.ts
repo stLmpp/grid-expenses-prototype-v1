@@ -4,6 +4,7 @@ import {
   addEntities,
   deleteEntities,
   deleteEntitiesByPredicate,
+  getAllEntitiesApply,
   setEntities,
   updateEntities,
   updateEntitiesByPredicate,
@@ -29,12 +30,13 @@ export class ExpenseService {
   updateDescription(year: number, month: number, expense: Expense): void {
     // TODO refactor this function to be smaller
     // TODO handle case where the installment number changed with isFirstInstallment
+    // TODO delete item
     const installmentsInfo = getInstallmentsFromDescription(expense.description);
     if (!installmentsInfo) {
       if (expense.installmentId) {
         this._expenseStore.update(
           deleteEntitiesByPredicate(
-            (_expense) => _expense.installmentId === expense.installmentId && _expense.installment! > 1
+            (_expense) => _expense.installmentId === expense.installmentId && !_expense.isFirstInstallment
           ),
           updateEntities(expense.id, {
             description: expense.description,
@@ -65,7 +67,7 @@ export class ExpenseService {
               (_expense) =>
                 !!_expense.installmentId &&
                 _expense.installmentId === expense.installmentId &&
-                _expense.installment! > 1,
+                !_expense.isFirstInstallment,
               (_expense) => ({
                 ..._expense,
                 description: `${descriptionWithoutInstallments}${_expense.installment}/${installmentQuantity}`,
@@ -94,7 +96,7 @@ export class ExpenseService {
               (_expense) =>
                 !!_expense.installmentId &&
                 _expense.installmentId === expense.installmentId &&
-                _expense.installment! > 1 &&
+                !_expense.isFirstInstallment &&
                 _expense.installment! < installmentQuantity,
               (_expense) => ({
                 ..._expense,
@@ -103,12 +105,99 @@ export class ExpenseService {
             )
           );
         }
+      } else if (installment !== expense.installment) {
+        if (installment > expense.installment!) {
+          const difference = installment - expense.installment!;
+          this._expenseStore.update(
+            updateEntities(expense.id, { description: expense.description, installment }),
+            deleteEntitiesByPredicate(
+              (_expense) =>
+                !!_expense.installmentId &&
+                _expense.installmentId === expense.installmentId &&
+                !_expense.isFirstInstallment &&
+                _expense.installment! + difference > installmentQuantity
+            ),
+            updateEntitiesByPredicate(
+              (_expense) =>
+                !!_expense.installmentId &&
+                _expense.installmentId === expense.installmentId &&
+                !_expense.isFirstInstallment &&
+                _expense.installment! < installmentQuantity,
+              (_expense) => ({
+                ..._expense,
+                description: `${descriptionWithoutInstallments}${
+                  _expense.installment! + difference
+                }/${installmentQuantity}`,
+                installment: _expense.installment! + difference,
+              })
+            )
+          );
+        } else {
+          const difference = expense.installment! - installment;
+          const lastInstallment = arrayUtil(
+            this._expenseStore.query(
+              getAllEntitiesApply({
+                filterEntity: (_expense) => _expense.installmentId === expense.installmentId,
+              })
+            ),
+            'id'
+          )
+            .orderBy(['year', 'month'])
+            .getLast()!;
+          const newEntities: Expense[] = [];
+
+          for (let index = installmentQuantity; index >= difference; index--) {
+            const nextDate = addMonths(new Date(year, month - 1), index);
+            newEntities.push({
+              month: nextDate.getMonth() + 1,
+              year: nextDate.getFullYear(),
+              description: `${descriptionWithoutInstallments}${
+                lastInstallment.installment! + (index - 1)
+              }/${installmentQuantity}`,
+              id: v4(),
+              people: expense.people,
+              date: expense.date,
+              installmentId: expense.installmentId,
+              installment: lastInstallment.installment! + (index - 1),
+            });
+          }
+          this._expenseStore.update(
+            updateEntities(expense.id, { description: expense.description, installment }),
+            addEntities(newEntities)
+          );
+          // this._expenseStore.update(
+          //   updateEntities(expense.id, { description: expense.description, installment }),
+          //   deleteEntitiesByPredicate(
+          //     (_expense) =>
+          //       !!_expense.installmentId &&
+          //       _expense.installmentId === expense.installmentId &&
+          //       !_expense.isFirstInstallment &&
+          //       _expense.installment! + difference > installmentQuantity
+          //   ),
+          //   updateEntitiesByPredicate(
+          //     (_expense) =>
+          //       !!_expense.installmentId &&
+          //       _expense.installmentId === expense.installmentId &&
+          //       !_expense.isFirstInstallment &&
+          //       _expense.installment! < installmentQuantity,
+          //     (_expense) => ({
+          //       ..._expense,
+          //       description: `${descriptionWithoutInstallments}${
+          //         _expense.installment! + difference
+          //       }/${installmentQuantity}`,
+          //       installment: _expense.installment! + difference,
+          //     })
+          //   )
+          // );
+        }
       } else {
         this._expenseStore.update(
           updateEntities(expense.id, { description: expense.description, installmentQuantity }),
           updateEntitiesByPredicate(
             (_expense) =>
-              !!_expense.installmentId && _expense.installmentId === expense.installmentId && _expense.installment! > 1,
+              !!_expense.installmentId &&
+              _expense.installmentId === expense.installmentId &&
+              !_expense.isFirstInstallment,
             (_expense) => ({
               ..._expense,
               description: `${descriptionWithoutInstallments}${_expense.installment}/${installmentQuantity}`,
