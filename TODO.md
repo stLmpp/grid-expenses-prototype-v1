@@ -4,5 +4,6 @@
 - [x] Add year model to the logic
 - [ ] Figure out a way to add new lines when no lines are present
 - [x] Make logic to replicate installments to next months
-- [ ] Add order field to Expense
-- [ ] Color of rows
+- [x] Add order field to Expense
+- [x] Color of rows (installment)
+- [ ] Color of rows (custom)

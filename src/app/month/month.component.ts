@@ -42,6 +42,8 @@ import { getParam } from '../shared/utils/get-param';
 import { selectParam } from '../shared/utils/select-param';
 import { isRangeSingleRow } from '../shared/utils/utilts';
 
+import { isNodeMovable } from './is-node-movable';
+
 interface ColumnStateChangedEvent {
   year: number;
   month: number;
@@ -118,6 +120,7 @@ export class MonthComponent implements OnDestroy {
           const model = params.api.getModel();
           const lastIndex = model.getRowCount() - 1;
           if (
+            isNodeMovable(params.node) &&
             params.node.rowIndex !== lastIndex &&
             params.event.shiftKey &&
             (params.event.metaKey || params.event.altKey)
@@ -132,7 +135,12 @@ export class MonthComponent implements OnDestroy {
           break;
         }
         case Key.ArrowUp: {
-          if (params.node.rowIndex && params.event.shiftKey && (params.event.metaKey || params.event.altKey)) {
+          if (
+            isNodeMovable(params.node) &&
+            params.node.rowIndex &&
+            params.event.shiftKey &&
+            (params.event.metaKey || params.event.altKey)
+          ) {
             const targetIndex = params.node.rowIndex - 1;
             const targetNode = params.api.getModel().getRow(targetIndex)!;
             this._expenseService.move(this._getYear(), this._getMonth(), params.node.id!, targetNode.id!);
@@ -290,7 +298,8 @@ export class MonthComponent implements OnDestroy {
   }
 
   onGridReady($event: GridReadyEvent<Expense>): void {
-    this._expenseService.generateRandomData(this._getYear(), this._getMonth(), 1);
+    // this._expenseService.generateRandomData(this._getYear(), this._getMonth(), 1);
+    this._expenseService.generateRandomDataMultipleMonths();
     this._columnStateChanged$
       .pipe(takeUntil(this._destroy$), debounceTime(250))
       .subscribe(({ year, month, columnsState }) => {

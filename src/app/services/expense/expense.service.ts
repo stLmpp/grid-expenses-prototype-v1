@@ -117,6 +117,7 @@ export class ExpenseService {
       people: {},
       month,
       year,
+      order: 0,
     };
   }
 

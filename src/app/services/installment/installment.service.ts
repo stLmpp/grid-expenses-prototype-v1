@@ -91,6 +91,7 @@ export class InstallmentService {
         installment: index + 1,
         installmentQuantity: newInstallmentQuantity,
         isFirstInstallment: false,
+        order: 0,
       });
     }
     return this._expenseStore.update(
@@ -157,6 +158,7 @@ export class InstallmentService {
         installment: installment + index,
         installmentQuantity,
         isFirstInstallment: false,
+        order: 0,
       });
     }
     this._expenseStore.update(

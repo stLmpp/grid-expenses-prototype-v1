@@ -79,7 +79,24 @@ export class ExpenseQuery {
       selectAllEntitiesApply({
         filterEntity: (entity) => entity.year === year && entity.month === month,
         mapEntity: (entity) => ({ ...entity, date: new Date(entity.date), people: { ...entity.people } }),
-      })
+      }),
+      map((expenses) =>
+        [...expenses].sort((valueA, valueB) => {
+          if (valueA.installmentId && valueB.installmentId) {
+            return valueA.order - valueB.order;
+          }
+          if (valueA.isFirstInstallment || valueB.isFirstInstallment) {
+            return valueA.order - valueB.order;
+          }
+          if (valueA.installmentId && !valueB.installmentId) {
+            return -1;
+          }
+          if (!valueA.installmentId && valueB.installmentId) {
+            return 1;
+          }
+          return valueA.order - valueB.order;
+        })
+      )
     );
   }
 }

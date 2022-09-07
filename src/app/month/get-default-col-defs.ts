@@ -11,6 +11,7 @@ import { InstallmentUpdateAllowedEnum } from '../services/installment/installmen
 import { isDescriptionUpdateAllowed } from '../services/installment/is-description-update-allowed';
 
 import { defaultCellClassRules } from './default-cell-class-rules';
+import { isNodeMovable } from './is-node-movable';
 
 function isEditable<T extends ColumnFunctionCallbackParams<Expense>>(params: T): boolean {
   return !params.node.isRowPinned() && (!params.data?.installmentId || !!params.data.isFirstInstallment);
@@ -41,7 +42,7 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
   return [
     {
       field: '$__rowDrag__$',
-      rowDrag: true,
+      rowDrag: (params) => isNodeMovable(params.node),
       ...controlDefaultColDef,
     },
     {
