@@ -3,5 +3,6 @@
 - [x] Undo and Redo
 - [x] Add year model to the logic
 - [ ] Figure out a way to add new lines when no lines are present
-- [ ] Make logic to replicate installments to next months
+- [x] Make logic to replicate installments to next months
 - [ ] Add order field to Expense
+- [ ] Color of rows
