@@ -2,16 +2,17 @@ import { inject, Injectable } from '@angular/core';
 import { OrArray } from '@ngneat/elf';
 import {
   addEntities,
-  deleteEntities,
+  deleteEntitiesByPredicate,
   setEntities,
   updateEntities,
   updateEntitiesByPredicate,
 } from '@ngneat/elf-entities';
 import { addDays, isBefore } from 'date-fns';
-import { arrayUtil, random } from 'st-utils';
+import { arrayUtil, coerceArray, random } from 'st-utils';
 import { v4 } from 'uuid';
 
-import { Expense } from '../../models/expense';
+import { Expense, ExpenseInstallment } from '../../models/expense';
+import { getEntitiesFiltered } from '../../shared/store/get-entities-filtered';
 import { mapEntities } from '../../shared/store/map-entities';
 import { getInstallmentsFromDescription } from '../../shared/utils/get-installments-from-description';
 import { InstallmentService } from '../installment/installment.service';
@@ -134,7 +135,30 @@ export class ExpenseService {
   }
 
   delete(year: number, month: number, idOrIds: OrArray<string>): void {
-    this._expenseStore.update(deleteEntities(idOrIds));
+    const ids = new Set(coerceArray(idOrIds));
+    function filterFn(expense: Expense): expense is ExpenseInstallment {
+      return ids.has(expense.id) && isExpenseInstallment(expense);
+    }
+    const expenses = this._expenseStore.query(getEntitiesFiltered(filterFn));
+    const expensesMapInstallmentId = expenses.reduce(
+      (acc, item) => acc.set(item.installmentId!, item),
+      new Map<string, ExpenseInstallment>()
+    );
+    this._expenseStore.update(
+      deleteEntitiesByPredicate((expense) => {
+        if (ids.has(expense.id)) {
+          return true;
+        }
+        if (!isExpenseInstallment(expense)) {
+          return false;
+        }
+        const installment = expensesMapInstallmentId.get(expense.installmentId);
+        if (!installment) {
+          return false;
+        }
+        return installment.installment < expense.installment;
+      })
+    );
   }
 
   add(expense: Expense): void {
