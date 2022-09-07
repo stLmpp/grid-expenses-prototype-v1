@@ -30,7 +30,6 @@ export class ExpenseService {
   }
 
   updateDescription(year: number, month: number, expense: Expense): void {
-    // TODO delete future installments
     const installmentsInfo = getInstallmentsFromDescription(expense.description);
     if (!installmentsInfo) {
       // No installment was found on description
