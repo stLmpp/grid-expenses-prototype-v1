@@ -9,6 +9,7 @@ import { CellEditorCurrencyComponent } from '../../ag-grid/cell-editor-currency/
 import { AgGridClassesEnum } from '../../ag-grid/classes.enum';
 import { HeaderPersonComponent, HeaderPersonParams } from '../../ag-grid/header-person/header-person.component';
 import { Expense } from '../../models/expense';
+import { defaultCellClassRules } from '../../month/default-cell-class-rules';
 import { getDefaultColDefs } from '../../month/get-default-col-defs';
 
 import { ExpenseStore } from './expense.store';
@@ -42,6 +43,9 @@ export class ExpenseQuery {
           headerComponent: HeaderPersonComponent,
           headerComponentParams: headerPersonParams,
           width: 150,
+          cellClassRules: {
+            ...defaultCellClassRules,
+          },
           cellClass: (params) => {
             const classes = [AgGridClassesEnum.PersonValue];
             if (params.node.isRowPinned()) {

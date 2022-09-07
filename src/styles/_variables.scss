@@ -1,0 +1,19 @@
+@use '@angular/material' as mat;
+
+$grid-spends-primary: mat.define-palette(mat.$indigo-palette);
+$grid-spends-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+$grid-spends-warn: mat.define-palette(mat.$red-palette);
+
+$grid-spends-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $grid-spends-primary,
+      accent: $grid-spends-accent,
+      warn: $grid-spends-warn,
+    ),
+  )
+);
+
+$cell-not-editable-color: #ebebeb;
+$cell-installment-color: #fce4d6;
+$cell-not-editable-installment-color: #f0e9e5;

@@ -3,6 +3,7 @@ import {
   CellValueChangedEvent,
   ColDef,
   ColumnApi,
+  ColumnEverythingChangedEvent,
   ColumnState,
   FilterChangedEvent,
   GridOptions,
@@ -23,6 +24,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { addMonths, setMonth, subMonths } from 'date-fns';
 import { auditTime, combineLatest, debounceTime, map, Observable, pairwise, Subject, switchMap, takeUntil } from 'rxjs';
+import { arrayUtil } from 'st-utils';
 import { Key } from 'ts-key-enum';
 
 import { AG_GRID_LOCALE_PT_BR } from '../ag-grid/ag-grid-pt-br';
@@ -35,6 +37,7 @@ import { ExpenseService } from '../services/expense/expense.service';
 import { GlobalListenersService } from '../services/global-listeners/global-listeners.service';
 import { GridStateQuery } from '../services/grid-state/grid-state.query';
 import { GridStateService } from '../services/grid-state/grid-state.service';
+import { findDifferenceIndexBy } from '../shared/utils/find-difference-index-by';
 import { getParam } from '../shared/utils/get-param';
 import { selectParam } from '../shared/utils/select-param';
 import { isRangeSingleRow } from '../shared/utils/utilts';
@@ -72,6 +75,8 @@ export class MonthComponent implements OnDestroy {
 
   private readonly _intl = Intl.DateTimeFormat(this._localeId, { month: 'long' });
 
+  private _defaultColumnsState: ColumnState[] = [];
+
   @ViewChild(AgGridAngular) readonly agGrid?: AgGridAngular<Expense>;
   @ViewChild(AgGridAngular, { read: ElementRef }) readonly agGridElement?: ElementRef<HTMLElement>;
 
@@ -88,9 +93,6 @@ export class MonthComponent implements OnDestroy {
     resizable: true,
     editable: false,
     floatingFilter: true,
-    // TODO DEBUG
-    tooltipValueGetter: (params) =>
-      Object.entries(params.data!).reduce((acc, [key, value]) => `${acc}${key}: ${JSON.stringify(value)}\n`, ''),
     suppressKeyboardEvent: (params) => {
       if (params.editing) {
         return false;
@@ -231,7 +233,6 @@ export class MonthComponent implements OnDestroy {
     suppressRowClickSelection: true,
     localeText: AG_GRID_LOCALE_PT_BR,
     enableFillHandle: true,
-    enableBrowserTooltips: true, // TODO DEBUG
     getMainMenuItems: (params) => {
       const headerPersonColumns =
         params.columnApi
@@ -295,8 +296,8 @@ export class MonthComponent implements OnDestroy {
       .subscribe(({ year, month, columnsState }) => {
         this._gridStateService.upsertColumnsState(year, month, columnsState);
       });
-    const originalColumnsState = $event.columnApi.getColumnState();
-    this._gridStateService.addIfNotExists(this._getYear(), this._getMonth(), originalColumnsState);
+    this._defaultColumnsState = $event.columnApi.getColumnState();
+    this._gridStateService.addIfNotExists(this._getYear(), this._getMonth(), this._defaultColumnsState);
     combineLatest([this.year$.pipe(pairwise()), this._month$.pipe(pairwise())])
       .pipe(takeUntil(this._destroy$))
       .subscribe(([[oldYear, year], [oldMonth, month]]) => {
@@ -306,7 +307,7 @@ export class MonthComponent implements OnDestroy {
           oldMonth,
           cell ? { rowIndex: cell.rowIndex, colId: cell.column.getColId() } : null
         );
-        this._gridStateService.addIfNotExists(year, month, originalColumnsState);
+        this._gridStateService.addIfNotExists(year, month, this._defaultColumnsState);
       });
     combineLatest([this.year$, this._month$])
       .pipe(
@@ -325,10 +326,12 @@ export class MonthComponent implements OnDestroy {
           $event.api.ensureIndexVisible(state.focusedCell.rowIndex, 'middle');
           $event.api.ensureColumnVisible(state.focusedCell.colId, 'middle');
         } else {
-          if ($event.api.getModel().getRowCount()) {
-            $event.api.ensureIndexVisible(0);
-            $event.api.setFocusedCell(0, $event.columnApi.getAllGridColumns()[0]);
-          }
+          // TODO this is grabbing focus from the header person input
+          // I need to figure out a way to avoid this
+          // if ($event.api.getModel().getRowCount()) {
+          //   $event.api.ensureIndexVisible(0);
+          //   $event.api.setFocusedCell(0, $event.columnApi.getAllGridColumns()[0]);
+          // }
           const [column] = $event.columnApi.getAllGridColumns();
           $event.api.ensureColumnVisible(column);
         }
@@ -427,5 +430,21 @@ export class MonthComponent implements OnDestroy {
         break;
       }
     }
+  }
+
+  onColumnEverythingChanged($event: ColumnEverythingChangedEvent<Expense>): void {
+    if ($event.source === 'api') {
+      return;
+    }
+    const newColumnsState = $event.columnApi.getColumnState();
+    if (this._defaultColumnsState.length && newColumnsState.length !== this._defaultColumnsState.length) {
+      const difference = findDifferenceIndexBy(newColumnsState, this._defaultColumnsState, 'colId');
+      const util = arrayUtil(this._defaultColumnsState, 'colId');
+      for (const index of difference) {
+        util.insert(newColumnsState[index], index);
+      }
+      this._defaultColumnsState = util.toArray();
+    }
+    this.onColumnStateChange($event);
   }
 }

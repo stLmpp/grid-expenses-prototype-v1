@@ -1,0 +1,8 @@
+@use '@angular/material' as mat;
+@use 'variables' as var;
+@use 'ag-grid';
+
+@include mat.core();
+@include mat.all-component-themes(var.$grid-spends-theme);
+@import '@ag-grid-community/styles/ag-grid.css';
+@import '@ag-grid-community/styles/ag-theme-balham.css';

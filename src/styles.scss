@@ -1,25 +1,4 @@
-@use '@angular/material' as mat;
-@include mat.core();
-
-$grid-spends-primary: mat.define-palette(mat.$indigo-palette);
-$grid-spends-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
-
-$grid-spends-warn: mat.define-palette(mat.$red-palette);
-
-$grid-spends-theme: mat.define-light-theme(
-  (
-    color: (
-      primary: $grid-spends-primary,
-      accent: $grid-spends-accent,
-      warn: $grid-spends-warn,
-    ),
-  )
-);
-
-@include mat.all-component-themes($grid-spends-theme);
-
-@import '@ag-grid-community/styles/ag-grid.css';
-@import '@ag-grid-community/styles/ag-theme-balham.css';
+@use 'theme';
 
 html,
 body {
@@ -31,28 +10,4 @@ body {
 
 * {
   box-sizing: border-box;
-}
-
-.mat-icon.mat-icon-dynamic-ag-grid {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-}
-
-.ag-cell {
-  &.invalid {
-    &::before {
-      content: '';
-      border: 1px solid mat.get-color-from-palette($grid-spends-warn);
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: 0;
-    }
-  }
-
-  &.not-editable {
-    background-color: var(--ag-input-disabled-background-color);
-  }
 }

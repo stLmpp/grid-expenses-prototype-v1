@@ -10,6 +10,8 @@ import { Expense } from '../models/expense';
 import { InstallmentUpdateAllowedEnum } from '../services/installment/installment-update-allowed.enum';
 import { isDescriptionUpdateAllowed } from '../services/installment/is-description-update-allowed';
 
+import { defaultCellClassRules } from './default-cell-class-rules';
+
 function isEditable<T extends ColumnFunctionCallbackParams<Expense>>(params: T): boolean {
   return !params.node.isRowPinned() && (!params.data?.installmentId || !!params.data.isFirstInstallment);
 }
@@ -28,6 +30,9 @@ const controlDefaultColDef: ColDef<Expense> = {
   suppressSizeToFit: true,
   suppressPaste: true,
   suppressAutoSize: true,
+  cellClassRules: {
+    ...defaultCellClassRules,
+  },
 };
 
 export function getDefaultColDefs(): ColDef<Expense>[] {
@@ -54,6 +59,10 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       width: 150,
       cellEditor: CellEditorDateComponent,
       ...requiredValidation,
+      cellClassRules: {
+        ...requiredValidation.cellClassRules,
+        ...defaultCellClassRules,
+      },
       valueFormatter: (params) => {
         if (isDate(params.value)) {
           return format(params.value, 'dd/MM');
@@ -84,6 +93,10 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
         return updateAllowedBool;
       },
       ...requiredValidation,
+      cellClassRules: {
+        ...requiredValidation.cellClassRules,
+        ...defaultCellClassRules,
+      },
     },
   ];
 }
