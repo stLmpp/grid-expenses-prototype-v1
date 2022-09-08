@@ -3,6 +3,8 @@ import { ICellEditorParams } from '@ag-grid-community/core';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, ViewChild } from '@angular/core';
 import { isString } from 'st-utils';
 
+// TODO use iMask here and delete ngx-mask from project
+
 @Component({
   selector: 'app-cell-editor-currency',
   templateUrl: './cell-editor-currency.component.html',

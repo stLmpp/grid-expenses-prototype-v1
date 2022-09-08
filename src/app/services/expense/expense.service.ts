@@ -8,7 +8,7 @@ import {
   updateEntitiesByPredicate,
 } from '@ngneat/elf-entities';
 import { addDays, isBefore } from 'date-fns';
-import { arrayUtil, coerceArray, random } from 'st-utils';
+import { arrayUtil, coerceArray, orderBy, random } from 'st-utils';
 import { v4 } from 'uuid';
 
 import { Expense, ExpenseInstallment } from '../../models/expense';
@@ -92,19 +92,24 @@ export class ExpenseService {
 
   generateRandomDataMultipleMonths(): void {
     const year = new Date().getFullYear();
-    const newEntities: Expense[] = Array.from(
-      {
-        length: random(150, 500),
-      },
-      (_, index) => {
-        const y = random(year - 1, year + 1);
-        const m = random(1, 12);
-        return {
-          ...this.getBlankRow(y, m),
-          description: `This is a descriptions ${index + 1}`,
-          date: addDays(new Date(y, m - 1), index),
-        };
-      }
+    const newEntities: Expense[] = orderBy(
+      Array.from(
+        {
+          length: 5_000,
+        },
+        (_, index) => {
+          const y = random(year - 10, year + 10);
+          const m = random(1, 12);
+          return {
+            ...this.getBlankRow(y, m),
+            description: `This is a descriptions ${index + 1}`,
+            date: addDays(new Date(y, m - 1), random(0, 31)),
+            month: m,
+            year: y,
+          };
+        }
+      ),
+      'date'
     );
     this._expenseStore.update(setEntities(newEntities));
   }
@@ -117,7 +122,7 @@ export class ExpenseService {
       people: {},
       month,
       year,
-      order: 0,
+      otherCard: false,
     };
   }
 
@@ -201,5 +206,21 @@ export class ExpenseService {
         (expense) => ({ ...expense, people: { ...expense.people, ...data.people } })
       )
     );
+  }
+
+  updateOtherCard(expense: Expense, otherCard: boolean): void {
+    if (isExpenseInstallment(expense)) {
+      this._expenseStore.update(
+        updateEntitiesByPredicate(
+          (_expense) =>
+            isExpenseInstallment(_expense) &&
+            _expense.installmentId === expense.installmentId &&
+            _expense.installment >= expense.installment,
+          { otherCard }
+        )
+      );
+    } else {
+      this.update(expense.id, { otherCard });
+    }
   }
 }

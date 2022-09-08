@@ -97,6 +97,7 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       cellClassRules: {
         ...requiredValidation.cellClassRules,
         ...defaultCellClassRules,
+        'ag-right-aligned-cell': (params) => params.node.isRowPinned(),
       },
     },
   ];

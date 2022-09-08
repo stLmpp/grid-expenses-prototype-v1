@@ -5,4 +5,5 @@ import { isExpenseInstallment } from '../services/installment/is-expense-install
 
 export const defaultCellClassRules: CellClassRules<Expense> = {
   installment: (params) => !!params.data && isExpenseInstallment(params.data),
-}
+  'other-card': (params) => !!params.data?.otherCard,
+};

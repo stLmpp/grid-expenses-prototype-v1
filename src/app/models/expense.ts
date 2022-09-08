@@ -7,7 +7,7 @@ export interface Expense {
   people: Record<string, number | null | undefined>;
   year: number;
   month: number;
-  order: number;
+  otherCard: boolean;
   isFirstInstallment?: boolean | null;
   installmentId?: string | null;
   installmentQuantity?: number | null;

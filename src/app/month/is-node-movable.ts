@@ -4,5 +4,5 @@ import { Expense } from '../models/expense';
 import { isExpenseInstallment } from '../services/installment/is-expense-installment';
 
 export function isNodeMovable(node: RowNode<Expense>): boolean {
-  return !isExpenseInstallment(node.data) || node.data.isFirstInstallment;
+  return !!node.data && !node.data.otherCard && (!isExpenseInstallment(node.data) || node.data.isFirstInstallment);
 }

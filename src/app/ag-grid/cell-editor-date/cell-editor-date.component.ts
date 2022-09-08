@@ -10,9 +10,12 @@ import {
   ViewChild,
 } from '@angular/core';
 import { addDays, addMonths, addYears, format, isDate, isValid, parse, subDays, subMonths, subYears } from 'date-fns';
+import IMask from 'imask';
 import { Subject, takeUntil } from 'rxjs';
 import { isString } from 'st-utils';
 import { Key } from 'ts-key-enum';
+
+import { Expense } from '../../models/expense';
 
 @Component({
   selector: 'app-cell-editor-date',
@@ -26,6 +29,32 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
 
   @ViewChild('input') readonly inputElement!: ElementRef<HTMLInputElement>;
 
+  readonly maskOptions: IMask.AnyMaskedOptions = {
+    mask: Date,
+    pattern: 'd/`m/`Y',
+    format: (date) => format(date, 'dd/MM/yyyy'),
+    parse: (date) => parse(date, 'dd/MM/yyyy', new Date()),
+    lazy: false,
+    blocks: {
+      yyyy: {
+        mask: IMask.MaskedRange,
+        from: 1970,
+        to: 2999,
+      },
+      mm: {
+        mask: IMask.MaskedRange,
+        from: 1,
+        to: 12,
+      },
+      dd: {
+        mask: IMask.MaskedRange,
+        from: 1,
+        to: 31,
+      },
+    },
+  };
+
+  params!: ICellEditorParams<Expense>;
   value?: string | null;
 
   private _formatDate(date: Date): string {
@@ -56,6 +85,13 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
     this.value = this._formatDate(subFn(this._parseDate(this.value), 1));
   }
 
+  private _focusOnDayAndMonth(): void {
+    if (this.value && this.value.length >= 4) {
+      // TODO fix this
+      this.inputElement.nativeElement.setSelectionRange(0, 5);
+    }
+  }
+
   agInit(params: ICellEditorParams): void {
     if (!params.value && params.charPress && /\d+/.test(params.charPress)) {
       this.value = params.charPress;
@@ -64,6 +100,7 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
     } else if (isDate(params.value)) {
       this.value = this._formatDate(params.value);
     }
+    this.params = params;
   }
 
   focusIn(): void {
@@ -76,14 +113,10 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
 
   getValue(): Date | null | undefined {
     if (!this.value) {
-      return null;
+      return this.params.data.date;
     }
     const date = this._parseDate(this.value);
     return isValid(date) ? date : null;
-  }
-
-  onModelChange($event: string | null | undefined): void {
-    this.value = $event;
   }
 
   onKeydown($event: KeyboardEvent): void {
@@ -95,10 +128,12 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
       switch (event.key) {
         case Key.ArrowUp: {
           this._handleArrowUp(event);
+          this._focusOnDayAndMonth();
           break;
         }
         case Key.ArrowDown: {
           this._handleArrowDown(event);
+          this._focusOnDayAndMonth();
           break;
         }
       }
@@ -108,6 +143,9 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
   ngAfterViewInit(): void {
     setTimeout(() => {
       this.inputElement.nativeElement.focus();
+      if (this.value && this.value.length >= 4) {
+        this.inputElement.nativeElement.setSelectionRange(0, 5);
+      }
     });
   }
 

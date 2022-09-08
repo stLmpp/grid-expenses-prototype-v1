@@ -3,8 +3,6 @@ import { Store, StoreValue } from '@ngneat/elf';
 import { stateHistory } from '@ngneat/elf-state-history';
 import { StateHistory } from '@ngneat/elf-state-history/lib/state-history';
 
-import { mapEntities } from './map-entities';
-
 export function createStoreProviders<S extends Store, E extends Record<string, any>>(
   store: S,
   options?: {
@@ -38,16 +36,6 @@ export function createStoreProviders<S extends Store, State extends StoreValue<S
       maxAge: 100,
     });
   }
-
-  const update = store.update;
-
-  store.update = function (...args: any) {
-    return update.call(
-      this,
-      ...args,
-      mapEntities((entities) => entities.map((entity, index) => ({ ...entity, order: index })))
-    );
-  };
 
   const useFactory = (): S => Object.assign(store, extendedStore);
   return { Base: StoreClass as any, useFactory };

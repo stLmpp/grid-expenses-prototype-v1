@@ -1,10 +1,8 @@
 <input
   class="ag-input-field-input ag-text-field-input"
   #input
-  [ngModel]="value"
-  [dropSpecialCharacters]="false"
-  (ngModelChange)="onModelChange($event)"
+  [(ngModel)]="value"
+  [imask]="maskOptions"
   (keydown)="onKeydown($event)"
   type="text"
-  mask="d0/M0/0000"
 />

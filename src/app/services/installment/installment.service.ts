@@ -70,7 +70,7 @@ export class InstallmentService {
    * Example: If we change from 1/4 to 1/6
    */
   installmentQuantityHigher(
-    { installmentQuantity: oldInstallmentQuantity, people, date, installmentId }: ExpenseInstallment,
+    { installmentQuantity: oldInstallmentQuantity, people, date, installmentId, otherCard }: ExpenseInstallment,
     newInstallmentQuantity: number,
     year: number,
     month: number,
@@ -91,7 +91,7 @@ export class InstallmentService {
         installment: index + 1,
         installmentQuantity: newInstallmentQuantity,
         isFirstInstallment: false,
-        order: 0,
+        otherCard,
       });
     }
     return this._expenseStore.update(
@@ -158,7 +158,7 @@ export class InstallmentService {
         installment: installment + index,
         installmentQuantity,
         isFirstInstallment: false,
-        order: 0,
+        otherCard: expense.otherCard,
       });
     }
     this._expenseStore.update(

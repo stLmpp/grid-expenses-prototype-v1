@@ -82,19 +82,25 @@ export class ExpenseQuery {
       }),
       map((expenses) =>
         [...expenses].sort((valueA, valueB) => {
-          if (valueA.installmentId && valueB.installmentId) {
-            return valueA.order - valueB.order;
+          if (valueA.otherCard !== valueB.otherCard) {
+            return +valueB.otherCard - +valueA.otherCard;
           }
-          if (valueA.isFirstInstallment || valueB.isFirstInstallment) {
-            return valueA.order - valueB.order;
+          if (valueA.otherCard && valueB.otherCard) {
+            return +valueA.date - +valueB.date;
           }
           if (valueA.installmentId && !valueB.installmentId) {
+            if (valueA.isFirstInstallment) {
+              return 0;
+            }
             return -1;
           }
-          if (!valueA.installmentId && valueB.installmentId) {
+          if (!valueB.installmentId && valueB.installmentId) {
             return 1;
           }
-          return valueA.order - valueB.order;
+          if (valueA.installmentId && valueB.installment && !valueA.isFirstInstallment && !valueB.isFirstInstallment) {
+            return +valueA.date - +valueB.date;
+          }
+          return 0;
         })
       )
     );

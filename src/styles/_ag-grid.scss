@@ -22,32 +22,114 @@
 
   transition: background-color 200ms;
 
-  &.not-editable {
-    background-color: var.$cell-not-editable-color;
+  &:not(.ag-cell-inline-editing) {
+    &.not-editable {
+      background-color: var.$cell-not-editable-color;
+
+      &.other-card {
+        background-color: var.$cell-other-card-not-editable;
+      }
+
+      &.installment {
+        background-color: var.$cell-not-editable-installment-color;
+
+        &.other-card {
+          background-color: var.$cell-other-card-installment-not-editable;
+        }
+      }
+    }
 
     &.installment {
-      background-color: var.$cell-not-editable-installment-color;
-    }
-  }
+      background-color: var.$cell-installment-color;
 
-  &.installment {
-    background-color: var.$cell-installment-color;
+      &.other-card {
+        background-color: var.$cell-other-card-installment;
+      }
+    }
+
+    &.other-card {
+      background-color: var.$cell-other-card;
+      color: white;
+      --ag-range-selection-border-color: #8fcf5f;
+      .ag-icon {
+        color: rgba(255, 255, 255, 0.54);
+      }
+    }
   }
 }
 
 .ag-row {
   &.ag-row-hover {
     .ag-cell {
-      &.not-editable {
-        background-color: darken(var.$cell-not-editable-color, 5);
+      &:not(.ag-cell-inline-editing) {
+        &.not-editable {
+          background-color: darken(var.$cell-not-editable-color, 5);
+
+          &.other-card {
+            background-color: darken(var.$cell-other-card-not-editable, 5);
+          }
+
+          &.installment {
+            background-color: darken(var.$cell-not-editable-installment-color, 5);
+
+            &.other-card {
+              background-color: darken(var.$cell-other-card-installment-not-editable, 5);
+            }
+          }
+        }
 
         &.installment {
-          background-color: darken(var.$cell-not-editable-installment-color, 5);
+          background-color: darken(var.$cell-installment-color, 5);
+
+          &.other-card {
+            background-color: darken(var.$cell-other-card-installment, 5);
+          }
+        }
+
+        &.other-card {
+          background-color: darken(var.$cell-other-card, 5);
         }
       }
+    }
+  }
+}
 
-      &.installment {
-        background-color: darken(var.$cell-installment-color, 5);
+.ag-root:not(.ag-context-menu-open) {
+  .ag-body-viewport:not(.ag-has-focus) {
+    .ag-cell {
+      &:not(.ag-cell-inline-editing) {
+        &.not-editable {
+          background-color: var.$cell-not-editable-color;
+
+          &.other-card {
+            background-color: var.$cell-other-card-not-editable;
+          }
+
+          &.installment {
+            background-color: var.$cell-not-editable-installment-color;
+
+            &.other-card {
+              background-color: var.$cell-other-card-installment-not-editable;
+            }
+          }
+        }
+
+        &.installment {
+          background-color: var.$cell-installment-color;
+
+          &.other-card {
+            background-color: var.$cell-other-card-installment;
+          }
+        }
+
+        &.other-card {
+          background-color: var.$cell-other-card;
+          color: white;
+          --ag-range-selection-border-color: #8fcf5f;
+          .ag-icon {
+            color: rgba(255, 255, 255, 0.54);
+          }
+        }
       }
     }
   }

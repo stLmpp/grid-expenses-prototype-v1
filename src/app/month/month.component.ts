@@ -37,7 +37,9 @@ import { ExpenseService } from '../services/expense/expense.service';
 import { GlobalListenersService } from '../services/global-listeners/global-listeners.service';
 import { GridStateQuery } from '../services/grid-state/grid-state.query';
 import { GridStateService } from '../services/grid-state/grid-state.service';
+import { isExpenseInstallment } from '../services/installment/is-expense-installment';
 import { findDifferenceIndexBy } from '../shared/utils/find-difference-index-by';
+import { getAltSymbol } from '../shared/utils/get-alt-symbol';
 import { getParam } from '../shared/utils/get-param';
 import { selectParam } from '../shared/utils/select-param';
 import { isRangeSingleRow } from '../shared/utils/utilts';
@@ -74,6 +76,7 @@ export class MonthComponent implements OnDestroy {
 
   private readonly _addIcon = 'add';
   private readonly _deleteIcon = 'remove';
+  private readonly _creditCardIcon = 'credit_card';
 
   private readonly _intl = Intl.DateTimeFormat(this._localeId, { month: 'long' });
 
@@ -208,7 +211,7 @@ export class MonthComponent implements OnDestroy {
       return false;
     },
   };
-  readonly pinnedTopRowData$: Observable<Pick<Expense, 'people'>[]> = combineLatest([
+  readonly pinnedTopRowData$: Observable<Pick<Expense, 'people' | 'description'>[]> = combineLatest([
     this._expenseQuery.people$,
     this.expenses$,
   ]).pipe(
@@ -221,7 +224,7 @@ export class MonthComponent implements OnDestroy {
           peopleObject[key] += value ?? 0;
         }
       }
-      return [{ people: peopleObject }];
+      return [{ people: peopleObject, description: 'Total por pessoa:' }];
     })
   );
 
@@ -274,6 +277,29 @@ export class MonthComponent implements OnDestroy {
           icon: iconDelete,
         },
         ...params.defaultItems,
+      ];
+    },
+    getContextMenuItems: (params) => {
+      const creditCardIcon = this._matIconDynamicHtmlService.get(this._viewContainerRef, this._creditCardIcon);
+      // TODO add more commands with shortcuts
+      // TODO add remover outro cartão option
+      return [
+        {
+          name: 'Outro cartão',
+          icon: creditCardIcon,
+          disabled:
+            !params.node ||
+            !!params.node.data?.otherCard ||
+            (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment),
+          shortcut: `${getAltSymbol()}+Shift+O`,
+          action: () => {
+            if (!params.node?.data) {
+              return;
+            }
+            this._expenseService.updateOtherCard(params.node.data, true);
+          },
+        },
+        ...(params.defaultItems ?? []),
       ];
     },
     getRowId: (config) => config.data.id,
@@ -367,6 +393,7 @@ export class MonthComponent implements OnDestroy {
   ngOnDestroy(): void {
     this._matIconDynamicHtmlService.destroy(this._addIcon);
     this._matIconDynamicHtmlService.destroy(this._deleteIcon);
+    this._matIconDynamicHtmlService.destroy(this._creditCardIcon);
     this._destroy$.next();
     this._destroy$.complete();
   }

@@ -139,6 +139,10 @@
           {
             "selector": "objectLiteralProperty",
             "format": null
+          },
+          {
+            "selector": "objectLiteralMethod",
+            "format": null
           }
         ],
         "@typescript-eslint/member-ordering": [
