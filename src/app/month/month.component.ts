@@ -33,7 +33,6 @@ import { Key } from 'ts-key-enum';
 
 import { AG_GRID_LOCALE_PT_BR } from '../ag-grid/ag-grid-pt-br';
 import { HeaderPersonComponent, HeaderPersonParams } from '../ag-grid/header-person/header-person.component';
-import { MatIconDynamicHtmlService } from '../mat-icon-dynamic-html.service';
 import { Expense } from '../models/expense';
 import { RouteParamEnum } from '../models/route-param.enum';
 import { ExpenseQuery } from '../services/expense/expense.query';
@@ -42,6 +41,7 @@ import { GlobalListenersService } from '../services/global-listeners/global-list
 import { GridStateQuery } from '../services/grid-state/grid-state.query';
 import { GridStateService } from '../services/grid-state/grid-state.service';
 import { isExpenseInstallment } from '../services/installment/is-expense-installment';
+import { MatIconDynamicHtmlService } from '../services/mat-icon-dynamic-html/mat-icon-dynamic-html.service';
 import { findDifferenceIndexBy } from '../shared/utils/find-difference-index-by';
 import { getAltSymbol } from '../shared/utils/get-alt-symbol';
 import { getParam } from '../shared/utils/get-param';
