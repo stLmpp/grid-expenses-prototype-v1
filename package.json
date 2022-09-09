@@ -44,7 +44,6 @@
     "angular-imask": "^6.4.2",
     "date-fns": "^2.29.2",
     "imask": "^6.4.2",
-    "ngx-mask": "^14.0.3",
     "rxjs": "~7.5.0",
     "st-utils": "^2.6.0",
     "ts-key-enum": "^2.0.12",

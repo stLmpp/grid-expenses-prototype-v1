@@ -29,7 +29,7 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
 
   @ViewChild('input') readonly inputElement!: ElementRef<HTMLInputElement>;
 
-  readonly maskOptions: IMask.AnyMaskedOptions = {
+  readonly maskOptions: IMask.MaskedDateOptions = {
     mask: Date,
     pattern: 'd/`m/`Y',
     format: (date) => format(date, 'dd/MM/yyyy'),

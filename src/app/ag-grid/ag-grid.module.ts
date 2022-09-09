@@ -18,20 +18,12 @@ import { ModuleWithProviders, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { IMaskDirectiveModule } from 'angular-imask';
-import { NgxMaskModule } from 'ngx-mask';
 
 import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-currency.component';
 import { CellEditorDateComponent } from './cell-editor-date/cell-editor-date.component';
 import { HeaderPersonComponent } from './header-person/header-person.component';
 
-const MODULES = [
-  AgGridModuleOriginal,
-  NgxMaskModule.forChild(),
-  FormsModule,
-  NgIf,
-  MatIconModule,
-  IMaskDirectiveModule,
-];
+const MODULES = [AgGridModuleOriginal, FormsModule, NgIf, MatIconModule, IMaskDirectiveModule];
 
 @NgModule({
   declarations: [CellEditorCurrencyComponent, HeaderPersonComponent, CellEditorDateComponent],
