@@ -35,23 +35,7 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
     format: (date) => format(date, 'dd/MM/yyyy'),
     parse: (date) => parse(date, 'dd/MM/yyyy', new Date()),
     lazy: false,
-    blocks: {
-      yyyy: {
-        mask: IMask.MaskedRange,
-        from: 1970,
-        to: 2999,
-      },
-      mm: {
-        mask: IMask.MaskedRange,
-        from: 1,
-        to: 12,
-      },
-      dd: {
-        mask: IMask.MaskedRange,
-        from: 1,
-        to: 31,
-      },
-    },
+    autofix: true,
   };
 
   params!: ICellEditorParams<Expense>;
@@ -86,10 +70,12 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
   }
 
   private _focusOnDayAndMonth(): void {
-    if (this.value && this.value.length >= 4) {
-      // TODO fix this
-      this.inputElement.nativeElement.setSelectionRange(0, 5);
-    }
+    setTimeout(() => {
+      this.inputElement.nativeElement.focus();
+      if (this.value && this.value.length >= 4) {
+        this.inputElement.nativeElement.setSelectionRange(0, 5);
+      }
+    });
   }
 
   agInit(params: ICellEditorParams): void {
@@ -141,12 +127,7 @@ export class CellEditorDateComponent implements ICellEditorAngularComp, AfterVie
   }
 
   ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.inputElement.nativeElement.focus();
-      if (this.value && this.value.length >= 4) {
-        this.inputElement.nativeElement.setSelectionRange(0, 5);
-      }
-    });
+    this._focusOnDayAndMonth();
   }
 
   ngOnDestroy(): void {

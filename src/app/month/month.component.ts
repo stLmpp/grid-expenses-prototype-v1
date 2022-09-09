@@ -193,7 +193,7 @@ export class MonthComponent implements OnDestroy {
       });
       return [
         {
-          name: 'Add person',
+          name: 'Adicionar pessoa',
           action: () => {
             if (!headerPersonParams) {
               return;
@@ -204,7 +204,7 @@ export class MonthComponent implements OnDestroy {
           icon: addIcon,
         },
         {
-          name: 'Delete person',
+          name: 'Deletar pessoa',
           action: () => {
             if (!headerPersonParams) {
               return;
