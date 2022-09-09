@@ -83,6 +83,7 @@ export const AG_GRID_LOCALE_PT_BR = {
   copy: 'Copiar',
   ctrlC: 'Ctrl+C',
   copyWithHeaders: 'Copiar com cabeçalhos',
+  copyWithGroupHeaders: 'Copiar com cabeçalhos dos agrupadores',
   paste: 'Colar',
   ctrlV: 'Ctrl+V',
   export: 'Exportar',

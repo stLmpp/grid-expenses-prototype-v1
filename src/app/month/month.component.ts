@@ -2,14 +2,18 @@ import { AgGridAngular } from '@ag-grid-community/angular';
 import {
   CellValueChangedEvent,
   ColDef,
+  Column,
   ColumnApi,
   ColumnEverythingChangedEvent,
   ColumnState,
   FilterChangedEvent,
+  GridApi,
   GridOptions,
   GridReadyEvent,
+  MenuItemDef,
   RowDataUpdatedEvent,
   RowDragEvent,
+  RowNode,
 } from '@ag-grid-community/core';
 import {
   ChangeDetectionStrategy,
@@ -74,9 +78,14 @@ export class MonthComponent implements OnDestroy {
   private readonly _columnStateChanged$ = new Subject<ColumnStateChangedEvent>();
   private readonly _destroy$ = new Subject<void>();
 
-  private readonly _addIcon = 'add';
-  private readonly _deleteIcon = 'remove';
-  private readonly _creditCardIcon = 'credit_card';
+  private readonly _icons = {
+    addIcon: 'add',
+    deleteIcon: 'delete',
+    creditCardIcon: 'credit_card',
+    arrowUpIcon: 'arrow_upward',
+    arrowDownIcon: 'arrow_downward',
+    deleteForeverIcon: 'delete_forever',
+  } as const;
 
   private readonly _intl = Intl.DateTimeFormat(this._localeId, { month: 'long' });
 
@@ -104,113 +113,39 @@ export class MonthComponent implements OnDestroy {
       }
       switch (params.event.key) {
         case ' ': {
-          const range = params.api.getCellRanges();
-          if (range) {
-            for (const r of range) {
-              if (r.startRow && r.endRow) {
-                for (let i = r.startRow.rowIndex; i <= r.endRow.rowIndex; i++) {
-                  const node = params.api.getModel().getRow(i);
-                  node?.setSelected(!node.isSelected());
-                }
-              }
-            }
-            params.event.preventDefault();
-            return true;
-          }
-          break;
+          return this._selectRowShortcut(params);
         }
         case Key.ArrowDown: {
-          const model = params.api.getModel();
-          const lastIndex = model.getRowCount() - 1;
-          if (
-            isNodeMovable(params.node) &&
-            params.node.rowIndex !== lastIndex &&
-            params.event.shiftKey &&
-            (params.event.metaKey || params.event.altKey)
-          ) {
-            const targetIndex = params.node.rowIndex! + 1;
-            const targetNode = model.getRow(targetIndex)!;
-            this._expenseService.move(this._getYear(), this._getMonth(), params.node.id!, targetNode.id!);
-            params.api.clearRangeSelection();
-            params.api.setFocusedCell(targetIndex, params.column);
-            return true;
-          }
-          break;
+          return this._moveRowDownShortcut(params);
         }
         case Key.ArrowUp: {
-          if (
-            isNodeMovable(params.node) &&
-            params.node.rowIndex &&
-            params.event.shiftKey &&
-            (params.event.metaKey || params.event.altKey)
-          ) {
-            const targetIndex = params.node.rowIndex - 1;
-            const targetNode = params.api.getModel().getRow(targetIndex)!;
-            this._expenseService.move(this._getYear(), this._getMonth(), params.node.id!, targetNode.id!);
-            params.api.clearRangeSelection();
-            params.api.setFocusedCell(targetIndex, params.column);
-            return true;
-          }
-          break;
+          return this._moveRowUpShortcut(params);
         }
         case 'L':
         case 'l': {
-          if (params.event.ctrlKey || params.event.metaKey) {
-            params.event.preventDefault();
-            const newIndex = params.api.getModel().getRowCount();
-            const newRow = this._expenseService.getBlankRow(this._getYear(), this._getMonth());
-            params.api.applyTransaction({
-              add: [newRow],
-            });
-            params.api.setFocusedCell(newIndex, params.column);
-            params.api.ensureIndexVisible(newIndex);
-            this._expenseService.add(newRow);
-          }
+          this._addNewRowShortcut(params);
           break;
         }
         case Key.Delete: {
-          const selectedRows = params.api.getSelectedRows();
-          if (selectedRows.length) {
-            const lastIndex = params.api.getModel().getRowCount() - 1;
-            this._expenseService.delete(
-              this._getYear(),
-              this._getMonth(),
-              selectedRows.map((row) => row.id)
-            );
-            if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
-              params.api.setFocusedCell(lastIndex - 1, params.column);
-            }
-          }
+          this._deleteSelectRowsShortcut(params);
           break;
         }
         case '-': {
-          if (params.event.ctrlKey || params.event.metaKey) {
-            params.event.preventDefault();
-            if (isRangeSingleRow(params.api)) {
-              const lastIndex = params.api.getModel().getRowCount() - 1;
-              this._expenseService.delete(this._getYear(), this._getMonth(), params.node.id!);
-              if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
-                params.api.setFocusedCell(lastIndex - 1, params.column);
-              }
-            }
-          }
+          this._deleteRowShortcut(params);
           break;
         }
         case '+': {
-          if (params.event.ctrlKey || params.event.metaKey) {
-            params.event.preventDefault();
-            if (isRangeSingleRow(params.api)) {
-              const newIndex = params.node.rowIndex! + 1;
-              this._expenseService.addBlankAt(this._getYear(), this._getMonth(), newIndex);
-              params.api.setFocusedCell(newIndex, params.column);
-            }
-          }
+          this._addRowShortcut(params);
           break;
         }
+        case 'o':
+        case 'O':
+          this._toggleOtherCardShortcut(params.node.data!);
       }
       return false;
     },
   };
+
   readonly pinnedTopRowData$: Observable<Pick<Expense, 'people' | 'description'>[]> = combineLatest([
     this._expenseQuery.people$,
     this.expenses$,
@@ -244,6 +179,7 @@ export class MonthComponent implements OnDestroy {
     suppressRowClickSelection: true,
     localeText: AG_GRID_LOCALE_PT_BR,
     enableFillHandle: true,
+    tooltipShowDelay: 400,
     getMainMenuItems: (params) => {
       const headerPersonColumns =
         params.columnApi
@@ -251,8 +187,10 @@ export class MonthComponent implements OnDestroy {
           ?.filter((column) => column.getColDef().headerComponent === HeaderPersonComponent) ?? [];
       const isHeaderPersonColumn = params.column.getColDef().headerComponent === HeaderPersonComponent;
       const headerPersonParams = params.column.getColDef().headerComponentParams as HeaderPersonParams | null;
-      const iconAdd = this._matIconDynamicHtmlService.get(this._viewContainerRef, 'add');
-      const iconDelete = this._matIconDynamicHtmlService.get(this._viewContainerRef, 'delete');
+      const { addIcon, deleteIcon } = this._matIconDynamicHtmlService.getMultiple(this._viewContainerRef, {
+        addIcon: this._icons.addIcon,
+        deleteIcon: this._icons.deleteIcon,
+      });
       return [
         {
           name: 'Add person',
@@ -263,7 +201,7 @@ export class MonthComponent implements OnDestroy {
             headerPersonParams.newPerson$.next();
           },
           disabled: !isHeaderPersonColumn || !headerPersonParams,
-          icon: iconAdd,
+          icon: addIcon,
         },
         {
           name: 'Delete person',
@@ -274,33 +212,115 @@ export class MonthComponent implements OnDestroy {
             headerPersonParams.deletePerson$.next();
           },
           disabled: !isHeaderPersonColumn || !headerPersonParams || headerPersonColumns.length <= 1,
-          icon: iconDelete,
+          icon: deleteIcon,
         },
         ...params.defaultItems,
       ];
     },
     getContextMenuItems: (params) => {
-      const creditCardIcon = this._matIconDynamicHtmlService.get(this._viewContainerRef, this._creditCardIcon);
-      // TODO add more commands with shortcuts
-      // TODO add remover outro cartão option
-      return [
+      const { addIcon, deleteIcon, deleteForeverIcon, arrowUpIcon, arrowDownIcon, creditCardIcon } =
+        this._matIconDynamicHtmlService.getMultiple(this._viewContainerRef, {
+          addIcon: this._icons.addIcon,
+          deleteIcon: this._icons.deleteIcon,
+          creditCardIcon: this._icons.creditCardIcon,
+          arrowUpIcon: this._icons.arrowUpIcon,
+          arrowDownIcon: this._icons.arrowDownIcon,
+          deleteForeverIcon: this._icons.deleteForeverIcon,
+        });
+      const otherCard = !!params.node?.data?.otherCard;
+      const customItems: MenuItemDef[] = [
         {
-          name: 'Outro cartão',
+          name: otherCard ? 'Cartão padrão' : 'Outro cartão',
           icon: creditCardIcon,
-          disabled:
-            !params.node ||
-            !!params.node.data?.otherCard ||
-            (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment),
+          disabled: !params.node || (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment),
           shortcut: `${getAltSymbol()}+Shift+O`,
           action: () => {
-            if (!params.node?.data) {
-              return;
-            }
-            this._expenseService.updateOtherCard(params.node.data, true);
+            this._toggleOtherCardShortcut(params.node!.data!);
           },
+          tooltip: otherCard ? 'Move para o cartão principal' : 'Move para outro cartão',
         },
-        ...(params.defaultItems ?? []),
+        {
+          name: 'Mover para baixo',
+          action: () => {
+            this._moveRowUpShortcut({
+              api: params.api,
+              node: params.node!,
+              column: params.column!,
+            });
+          },
+          icon: arrowUpIcon,
+          disabled:
+            !params.node ||
+            !params.column ||
+            !params.node.rowIndex ||
+            (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment) ||
+            !!params.node.data?.otherCard,
+          shortcut: `${getAltSymbol()}+Shift+↑`,
+          tooltip: 'Move a linha para cima',
+        },
+        {
+          name: 'Mover para cima',
+          action: () => {
+            this._moveRowDownShortcut({
+              api: params.api,
+              node: params.node!,
+              column: params.column!,
+            });
+          },
+          icon: arrowDownIcon,
+          disabled:
+            !params.node ||
+            !params.column ||
+            params.node.rowIndex === params.api.getModel().getRowCount() - 1 ||
+            (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment) ||
+            !!params.node.data?.otherCard,
+          shortcut: `${getAltSymbol()}+Shift+↓`,
+          tooltip: 'Move a linha para baixo',
+        },
+        {
+          name: 'Adicionar linha',
+          action: () => {
+            this._addRowShortcut({
+              api: params.api,
+              node: params.node!,
+              column: params.column!,
+            });
+          },
+          icon: addIcon,
+          disabled: !params.node || !params.column,
+          shortcut: `${getAltSymbol()}+(+)`,
+          tooltip: 'Adiciona uma nova linha abaixo',
+        },
+        {
+          name: 'Deletar linha',
+          action: () => {
+            this._deleteRowShortcut({
+              api: params.api,
+              node: params.node!,
+              column: params.column!,
+            });
+          },
+          icon: deleteIcon,
+          disabled: !params.node || !params.column,
+          shortcut: `${getAltSymbol()}+(-)`,
+          tooltip: 'Deleta a linha',
+        },
+        {
+          name: 'Deletar selecionados',
+          action: () => {
+            this._deleteSelectRowsShortcut({
+              api: params.api,
+              node: params.node!,
+              column: params.column!,
+            });
+          },
+          icon: deleteForeverIcon,
+          disabled: !params.node || !params.column || !params.api.getSelectedRows().length,
+          shortcut: `${getAltSymbol()}+Del`,
+          tooltip: 'Deleta as linhas selecionadas',
+        },
       ];
+      return [...customItems.filter((customItem) => !customItem.disabled), ...(params.defaultItems ?? [])];
     },
     getRowId: (config) => config.data.id,
   };
@@ -311,6 +331,126 @@ export class MonthComponent implements OnDestroy {
 
   private _getMonth(): number {
     return getParam(this._activatedRoute, RouteParamEnum.month)!;
+  }
+
+  private _selectRowShortcut<T extends { api: GridApi<Expense>; event?: KeyboardEvent }>(params: T): boolean {
+    const range = params.api.getCellRanges();
+    if (range) {
+      for (const r of range) {
+        if (r.startRow && r.endRow) {
+          for (let i = r.startRow.rowIndex; i <= r.endRow.rowIndex; i++) {
+            const node = params.api.getModel().getRow(i);
+            node?.setSelected(!node.isSelected());
+          }
+        }
+      }
+      params.event?.preventDefault();
+      return true;
+    }
+    return false;
+  }
+
+  private _moveRowDownShortcut<
+    T extends { api: GridApi<Expense>; node: RowNode<Expense>; event?: KeyboardEvent; column: Column }
+  >(params: T): boolean {
+    const model = params.api.getModel();
+    const lastIndex = model.getRowCount() - 1;
+    if (
+      isNodeMovable(params.node) &&
+      params.node.rowIndex !== lastIndex &&
+      (!params.event || (params.event.shiftKey && (params.event.metaKey || params.event.altKey)))
+    ) {
+      const targetIndex = params.node.rowIndex! + 1;
+      const targetNode = model.getRow(targetIndex)!;
+      this._expenseService.move(this._getYear(), this._getMonth(), params.node.id!, targetNode.id!);
+      params.api.clearRangeSelection();
+      params.api.setFocusedCell(targetIndex, params.column);
+      return true;
+    }
+    return false;
+  }
+
+  private _moveRowUpShortcut<
+    T extends { api: GridApi<Expense>; node: RowNode<Expense>; event?: KeyboardEvent; column: Column }
+  >(params: T): boolean {
+    if (
+      isNodeMovable(params.node) &&
+      params.node.rowIndex &&
+      (!params.event || (params.event.shiftKey && (params.event.metaKey || params.event.altKey)))
+    ) {
+      const targetIndex = params.node.rowIndex - 1;
+      const targetNode = params.api.getModel().getRow(targetIndex)!;
+      this._expenseService.move(this._getYear(), this._getMonth(), params.node.id!, targetNode.id!);
+      params.api.clearRangeSelection();
+      params.api.setFocusedCell(targetIndex, params.column);
+      return true;
+    }
+    return false;
+  }
+
+  private _addNewRowShortcut<T extends { event?: KeyboardEvent; api: GridApi<Expense>; column: Column }>(
+    params: T
+  ): void {
+    if (!params.event || params.event.altKey || params.event.metaKey) {
+      params.event?.preventDefault();
+      const newIndex = params.api.getModel().getRowCount();
+      const newRow = this._expenseService.getBlankRow(this._getYear(), this._getMonth());
+      params.api.applyTransaction({
+        add: [newRow],
+      });
+      params.api.setFocusedCell(newIndex, params.column);
+      params.api.ensureIndexVisible(newIndex);
+      this._expenseService.add(newRow);
+    }
+  }
+
+  private _deleteSelectRowsShortcut<T extends { api: GridApi<Expense>; node: RowNode<Expense>; column: Column }>(
+    params: T
+  ): void {
+    const selectedRows = params.api.getSelectedRows();
+    if (selectedRows.length) {
+      const lastIndex = params.api.getModel().getRowCount() - 1;
+      this._expenseService.delete(
+        this._getYear(),
+        this._getMonth(),
+        selectedRows.map((row) => row.id)
+      );
+      if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
+        params.api.setFocusedCell(lastIndex - 1, params.column);
+      }
+    }
+  }
+
+  private _deleteRowShortcut<
+    T extends { event?: KeyboardEvent; api: GridApi<Expense>; node: RowNode<Expense>; column: Column }
+  >(params: T): void {
+    if (!params.event || params.event.altKey || params.event.metaKey) {
+      params.event?.preventDefault();
+      if (isRangeSingleRow(params.api)) {
+        const lastIndex = params.api.getModel().getRowCount() - 1;
+        this._expenseService.delete(this._getYear(), this._getMonth(), params.node.id!);
+        if (params.node.rowIndex && params.node.rowIndex === lastIndex) {
+          params.api.setFocusedCell(lastIndex - 1, params.column);
+        }
+      }
+    }
+  }
+
+  private _addRowShortcut<
+    T extends { event?: KeyboardEvent; api: GridApi<Expense>; node: RowNode<Expense>; column: Column }
+  >(params: T): void {
+    if (!params.event || params.event.altKey || params.event.metaKey) {
+      params.event?.preventDefault();
+      if (isRangeSingleRow(params.api)) {
+        const newIndex = params.node.rowIndex! + 1;
+        this._expenseService.addBlankAt(this._getYear(), this._getMonth(), newIndex);
+        params.api.setFocusedCell(newIndex, params.column);
+      }
+    }
+  }
+
+  private _toggleOtherCardShortcut(expense: Expense): void {
+    this._expenseService.updateOtherCard(expense, !expense.otherCard);
   }
 
   onCellValueChanged($event: CellValueChangedEvent<Expense>): void {
@@ -391,9 +531,10 @@ export class MonthComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this._matIconDynamicHtmlService.destroy(this._addIcon);
-    this._matIconDynamicHtmlService.destroy(this._deleteIcon);
-    this._matIconDynamicHtmlService.destroy(this._creditCardIcon);
+    const icons = Object.values(this._icons);
+    for (const icon of icons) {
+      this._matIconDynamicHtmlService.destroy(icon);
+    }
     this._destroy$.next();
     this._destroy$.complete();
   }
@@ -453,14 +594,14 @@ export class MonthComponent implements OnDestroy {
     switch ($event.key) {
       case 'z':
       case 'Z': {
-        if ($event.ctrlKey) {
+        if ($event.altKey || $event.metaKey) {
           this._expenseService.undo();
         }
         break;
       }
       case 'y':
       case 'Y': {
-        if ($event.ctrlKey) {
+        if ($event.altKey || $event.metaKey) {
           this._expenseService.redo();
         }
         break;

@@ -6,4 +6,7 @@
 - [x] Make logic to replicate installments to next months
 - [x] Add order field to Expense
 - [x] Color of rows (installment)
-- [ ] Color of rows (custom)
+- [x] Color of rows (custom)
+- [x] Explain shortcuts (context menu)
+- [ ] Pre-process copy and paste
+- [ ] Pre-process excel and csv exports

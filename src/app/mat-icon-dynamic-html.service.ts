@@ -20,6 +20,18 @@ export class MatIconDynamicHtmlService {
     return cloneElement;
   }
 
+  getMultiple<T extends Record<any, string>>(
+    viewContainerRef: ViewContainerRef,
+    icons: T
+  ): Record<keyof T, HTMLElement> {
+    const object: Record<string, HTMLElement> = {};
+    const entries = Object.entries(icons);
+    for (const [key, icon] of entries) {
+      object[key] = this.get(viewContainerRef, icon);
+    }
+    return object as Record<keyof T, HTMLElement>;
+  }
+
   destroy(fontIcon: string): void {
     this._cache.get(fontIcon)?.remove();
     this._cache.delete(fontIcon);
