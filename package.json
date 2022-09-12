@@ -40,7 +40,7 @@
     "@ngneat/elf": "^2.1.0",
     "@ngneat/elf-devtools": "^1.2.1",
     "@ngneat/elf-entities": "^4.4.2",
-    "@ngneat/elf-state-history": "^1.2.1",
+    "@ngneat/elf-state-history": "^1.2.2",
     "angular-imask": "^6.4.2",
     "date-fns": "^2.29.2",
     "imask": "^6.4.2",

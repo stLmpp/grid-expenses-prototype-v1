@@ -443,7 +443,7 @@ export class MonthComponent implements OnDestroy {
       params.event?.preventDefault();
       if (isRangeSingleRow(params.api)) {
         const newIndex = params.node.rowIndex! + 1;
-        this._expenseService.addBlankAt(this._getYear(), this._getMonth(), newIndex);
+        this._expenseService.addBlankAt(this._getYear(), this._getMonth(), params.node.data!.date.getDate(), newIndex);
         params.api.setFocusedCell(newIndex, params.column);
       }
     }

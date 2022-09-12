@@ -7,7 +7,7 @@ import {
   updateEntities,
   updateEntitiesByPredicate,
 } from '@ngneat/elf-entities';
-import { addDays, isBefore } from 'date-fns';
+import { addDays, isBefore, setDate } from 'date-fns';
 import { arrayUtil, coerceArray, orderBy, random } from 'st-utils';
 import { v4 } from 'uuid';
 
@@ -114,11 +114,15 @@ export class ExpenseService {
     this._expenseStore.update(setEntities(newEntities));
   }
 
-  getBlankRow(year: number, month: number): Expense {
+  getBlankRow(year: number, month: number, day?: number): Expense {
+    let date = new Date(year, month - 1);
+    if (day) {
+      date = addDays(setDate(date, day), 1);
+    }
     return {
       id: v4(),
       description: '',
-      date: new Date(year, month - 1),
+      date,
       people: {},
       month,
       year,
@@ -170,12 +174,12 @@ export class ExpenseService {
     this._expenseStore.update(addEntities(expense));
   }
 
-  addBlankAt(year: number, month: number, index: number): void {
+  addBlankAt(year: number, month: number, day: number, index: number): void {
     this._expenseStore.update(
       mapEntities((expenses) => {
         const expensesMonth = expenses.filter((expense) => expense.year === year && expense.month === month);
         const id = expensesMonth[index]?.id;
-        const newItem = this.getBlankRow(year, month);
+        const newItem = this.getBlankRow(year, month, day);
         if (!id) {
           return [...expenses, newItem];
         }

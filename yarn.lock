@@ -1619,10 +1619,10 @@
   resolved "https://registry.yarnpkg.com/@ngneat/elf-entities/-/elf-entities-4.4.2.tgz#9cf88d7b0ee73c6440ec7bb54b7e372b40b77c68"
   integrity sha512-e9bgL7k9nI419IM1uSHt+WZYesCWhbsbs9+7QVDpXXMKCwCN8lofUX2aATiDxEmw+9riC5o45BGWaSLVMch1QA==
 
-"@ngneat/elf-state-history@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@ngneat/elf-state-history/-/elf-state-history-1.2.1.tgz#38cdddc9a9ecdd754f209cca75613bdceda28a0a"
-  integrity sha512-I/yowFWnQoOmgnMHhQVYnBEByBuqbRTE/BBRAgD5MwZ2MU8FmPe5yDe1DTcdaMr6IS0IoiwEoar2x0OcSRJuJQ==
+"@ngneat/elf-state-history@^1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@ngneat/elf-state-history/-/elf-state-history-1.2.2.tgz#90b989a272eb9747e64533db5893ae3c58c4d4db"
+  integrity sha512-wERnapvmrCrpSoa9ZGf2Lpqs2tEDdgpt56NSq4hMoUy4MuOG5j8XhCCuOBQzaBFSqA6yQDEBD6sY/SFsTeUONw==
 
 "@ngneat/elf@^2.1.0":
   version "2.1.0"
