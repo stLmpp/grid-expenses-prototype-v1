@@ -42,8 +42,8 @@ import { GridStateQuery } from '../services/grid-state/grid-state.query';
 import { GridStateService } from '../services/grid-state/grid-state.service';
 import { isExpenseInstallment } from '../services/installment/is-expense-installment';
 import { MatIconDynamicHtmlService } from '../services/mat-icon-dynamic-html/mat-icon-dynamic-html.service';
+import { ShortcutService } from '../services/shortcut/shortcut.service';
 import { findDifferenceIndexBy } from '../shared/utils/find-difference-index-by';
-import { getAltSymbol } from '../shared/utils/get-alt-symbol';
 import { getParam } from '../shared/utils/get-param';
 import { selectParam } from '../shared/utils/select-param';
 import { isRangeSingleRow } from '../shared/utils/utilts';
@@ -73,6 +73,7 @@ export class MonthComponent implements OnDestroy {
   private readonly _gridStateService = inject(GridStateService);
   private readonly _gridStateQuery = inject(GridStateQuery);
   private readonly _globalListenersService = inject(GlobalListenersService);
+  private readonly _shortcutService = inject(ShortcutService);
 
   private readonly _month$ = selectParam(RouteParamEnum.month, { nonNullable: true });
   private readonly _columnStateChanged$ = new Subject<ColumnStateChangedEvent>();
@@ -85,6 +86,8 @@ export class MonthComponent implements OnDestroy {
     arrowUpIcon: 'arrow_upward',
     arrowDownIcon: 'arrow_downward',
     deleteForeverIcon: 'delete_forever',
+    undoIcon: 'undo',
+    redoIcon: 'redo',
   } as const;
 
   private readonly _intl = Intl.DateTimeFormat(this._localeId, { month: 'long' });
@@ -140,7 +143,7 @@ export class MonthComponent implements OnDestroy {
         }
         case 'o':
         case 'O':
-          this._toggleOtherCardShortcut(params.node.data!);
+          this._toggleOtherCardShortcut(params);
       }
       return false;
     },
@@ -218,7 +221,7 @@ export class MonthComponent implements OnDestroy {
       ];
     },
     getContextMenuItems: (params) => {
-      const { addIcon, deleteIcon, deleteForeverIcon, arrowUpIcon, arrowDownIcon, creditCardIcon } =
+      const { addIcon, deleteIcon, deleteForeverIcon, arrowUpIcon, arrowDownIcon, creditCardIcon, undoIcon, redoIcon } =
         this._matIconDynamicHtmlService.getMultiple(this._viewContainerRef, {
           addIcon: this._icons.addIcon,
           deleteIcon: this._icons.deleteIcon,
@@ -226,16 +229,20 @@ export class MonthComponent implements OnDestroy {
           arrowUpIcon: this._icons.arrowUpIcon,
           arrowDownIcon: this._icons.arrowDownIcon,
           deleteForeverIcon: this._icons.deleteForeverIcon,
+          undoIcon: this._icons.undoIcon,
+          redoIcon: this._icons.redoIcon,
         });
       const otherCard = !!params.node?.data?.otherCard;
-      const customItems: MenuItemDef[] = [
+      const firstItems: MenuItemDef[] = [
         {
           name: otherCard ? 'Cartão padrão' : 'Outro cartão',
           icon: creditCardIcon,
           disabled: !params.node || (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment),
-          shortcut: `${getAltSymbol()}+Shift+O`,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+Shift+O`,
           action: () => {
-            this._toggleOtherCardShortcut(params.node!.data!);
+            this._toggleOtherCardShortcut({
+              node: params.node!,
+            });
           },
           tooltip: otherCard ? 'Move para o cartão principal' : 'Move para outro cartão',
         },
@@ -255,7 +262,7 @@ export class MonthComponent implements OnDestroy {
             !params.node.rowIndex ||
             (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment) ||
             !!params.node.data?.otherCard,
-          shortcut: `${getAltSymbol()}+Shift+↑`,
+          shortcut: `${this._shortcutService.getAltOrCommandSymbol()}+Shift+↑`,
           tooltip: 'Move a linha para cima',
         },
         {
@@ -274,7 +281,7 @@ export class MonthComponent implements OnDestroy {
             params.node.rowIndex === params.api.getModel().getRowCount() - 1 ||
             (isExpenseInstallment(params.node.data) && !params.node.data.isFirstInstallment) ||
             !!params.node.data?.otherCard,
-          shortcut: `${getAltSymbol()}+Shift+↓`,
+          shortcut: `${this._shortcutService.getAltOrCommandSymbol()}+Shift+↓`,
           tooltip: 'Move a linha para baixo',
         },
         {
@@ -288,7 +295,7 @@ export class MonthComponent implements OnDestroy {
           },
           icon: addIcon,
           disabled: !params.node || !params.column,
-          shortcut: `${getAltSymbol()}+(+)`,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+(+)`,
           tooltip: 'Adiciona uma nova linha abaixo',
         },
         {
@@ -302,7 +309,7 @@ export class MonthComponent implements OnDestroy {
           },
           icon: deleteIcon,
           disabled: !params.node || !params.column,
-          shortcut: `${getAltSymbol()}+(-)`,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+(-)`,
           tooltip: 'Deleta a linha',
         },
         {
@@ -316,11 +323,59 @@ export class MonthComponent implements OnDestroy {
           },
           icon: deleteForeverIcon,
           disabled: !params.node || !params.column || !params.api.getSelectedRows().length,
-          shortcut: `${getAltSymbol()}+Del`,
+          shortcut: 'Del',
           tooltip: 'Deleta as linhas selecionadas',
         },
+        {
+          name: 'Adicionar linha',
+          action: () => {
+            this._expenseService.add(this._expenseService.getBlankRow(this._getYear(), this._getMonth()));
+          },
+          icon: addIcon,
+          disabled: !!params.node,
+        },
+        {
+          name: 'Desfazer',
+          action: () => {
+            this._expenseService.undo();
+          },
+          disabled: !this._expenseService.hasUndo(),
+          icon: undoIcon,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+Z`,
+        },
+        {
+          name: 'Refazer',
+          action: () => {
+            this._expenseService.redo();
+          },
+          disabled: !this._expenseService.hasRedo(),
+          icon: redoIcon,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+Y`,
+        },
+        {
+          name: 'Copiar',
+          action: () => {
+            params.api.copySelectedRangeToClipboard();
+          },
+          disabled: !params.api.getCellRanges()?.length,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+C`,
+          icon: '<span class="ag-icon ag-icon-copy"></span>',
+        },
       ];
-      return [...customItems.filter((customItem) => !customItem.disabled), ...(params.defaultItems ?? [])];
+      const lastItems: (MenuItemDef | string)[] = [
+        {
+          name: 'Colar',
+          disabled: true,
+          shortcut: `${this._shortcutService.getCtrlOrCommandSymbol()}+V`,
+          icon: '<span class="ag-icon ag-icon-paste"></span>',
+        },
+        'autoSizeAll',
+        'resetColumns',
+      ];
+      const excludedItems = new Set(['copy', 'paste']);
+      // TODO change order
+      const defaultItems = (params.defaultItems ?? []).filter((item) => !excludedItems.has(item));
+      return [...firstItems.filter((customItem) => !customItem.disabled), ...defaultItems, ...lastItems];
     },
     getRowId: (config) => config.data.id,
   };
@@ -358,7 +413,7 @@ export class MonthComponent implements OnDestroy {
     if (
       isNodeMovable(params.node) &&
       params.node.rowIndex !== lastIndex &&
-      (!params.event || (params.event.shiftKey && (params.event.metaKey || params.event.altKey)))
+      (!params.event || (params.event.shiftKey && this._shortcutService.checkForAltOrCommand(params.event)))
     ) {
       const targetIndex = params.node.rowIndex! + 1;
       const targetNode = model.getRow(targetIndex)!;
@@ -376,7 +431,7 @@ export class MonthComponent implements OnDestroy {
     if (
       isNodeMovable(params.node) &&
       params.node.rowIndex &&
-      (!params.event || (params.event.shiftKey && (params.event.metaKey || params.event.altKey)))
+      (!params.event || (params.event.shiftKey && this._shortcutService.checkForAltOrCommand(params.event)))
     ) {
       const targetIndex = params.node.rowIndex - 1;
       const targetNode = params.api.getModel().getRow(targetIndex)!;
@@ -391,7 +446,7 @@ export class MonthComponent implements OnDestroy {
   private _addNewRowShortcut<T extends { event?: KeyboardEvent; api: GridApi<Expense>; column: Column }>(
     params: T
   ): void {
-    if (!params.event || params.event.altKey || params.event.metaKey) {
+    if (!params.event || this._shortcutService.checkForCtrlOrCommand(params.event)) {
       params.event?.preventDefault();
       const newIndex = params.api.getModel().getRowCount();
       const newRow = this._expenseService.getBlankRow(this._getYear(), this._getMonth());
@@ -424,7 +479,7 @@ export class MonthComponent implements OnDestroy {
   private _deleteRowShortcut<
     T extends { event?: KeyboardEvent; api: GridApi<Expense>; node: RowNode<Expense>; column: Column }
   >(params: T): void {
-    if (!params.event || params.event.altKey || params.event.metaKey) {
+    if (!params.event || this._shortcutService.getCtrlOrCommandSymbol()) {
       params.event?.preventDefault();
       if (isRangeSingleRow(params.api)) {
         const lastIndex = params.api.getModel().getRowCount() - 1;
@@ -439,7 +494,7 @@ export class MonthComponent implements OnDestroy {
   private _addRowShortcut<
     T extends { event?: KeyboardEvent; api: GridApi<Expense>; node: RowNode<Expense>; column: Column }
   >(params: T): void {
-    if (!params.event || params.event.altKey || params.event.metaKey) {
+    if (!params.event || this._shortcutService.getCtrlOrCommandSymbol()) {
       params.event?.preventDefault();
       if (isRangeSingleRow(params.api)) {
         const newIndex = params.node.rowIndex! + 1;
@@ -449,8 +504,11 @@ export class MonthComponent implements OnDestroy {
     }
   }
 
-  private _toggleOtherCardShortcut(expense: Expense): void {
-    this._expenseService.updateOtherCard(expense, !expense.otherCard);
+  private _toggleOtherCardShortcut<T extends { node: RowNode<Expense>; event?: KeyboardEvent }>(params: T): void {
+    if (!params.event || (this._shortcutService.checkForCtrlOrCommand(params.event) && params.event.shiftKey)) {
+      params.event?.preventDefault();
+      this._expenseService.updateOtherCard(params.node.data!, !params.node.data!.otherCard);
+    }
   }
 
   onCellValueChanged($event: CellValueChangedEvent<Expense>): void {
@@ -594,14 +652,14 @@ export class MonthComponent implements OnDestroy {
     switch ($event.key) {
       case 'z':
       case 'Z': {
-        if ($event.altKey || $event.metaKey) {
+        if (this._shortcutService.checkForCtrlOrCommand($event)) {
           this._expenseService.undo();
         }
         break;
       }
       case 'y':
       case 'Y': {
-        if ($event.altKey || $event.metaKey) {
+        if (this._shortcutService.checkForCtrlOrCommand($event)) {
           this._expenseService.redo();
         }
         break;

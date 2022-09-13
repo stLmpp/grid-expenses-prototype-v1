@@ -197,6 +197,14 @@ export class ExpenseService {
     this._expenseStore.history.redo();
   }
 
+  hasUndo(): boolean {
+    return this._expenseStore.history.hasPast;
+  }
+
+  hasRedo(): boolean {
+    return this._expenseStore.history.hasFuture;
+  }
+
   updatePersonValue(year: number, month: number, data: Expense): void {
     if (!data.installmentId) {
       return this.update(data.id, data);
