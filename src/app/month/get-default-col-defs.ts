@@ -4,6 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { format, isDate, isEqual } from 'date-fns';
 
 import { requiredValidation } from '../ag-grid/ag-grid-validations';
+import { CellEditorAutocompleteComponent } from '../ag-grid/cell-editor-autocomplete/cell-editor-autocomplete.component';
 import { CellEditorDateComponent } from '../ag-grid/cell-editor-date/cell-editor-date.component';
 import { AgGridClassesEnum } from '../ag-grid/classes.enum';
 import { Expense } from '../models/expense';
@@ -83,6 +84,7 @@ export function getDefaultColDefs(): ColDef<Expense>[] {
       cellClass: (params) => (isEditable(params) ? null : AgGridClassesEnum.NotEditable),
       width: 400,
       headerName: 'Descrição',
+      cellEditor: CellEditorAutocompleteComponent,
       valueSetter: (params) => {
         const updateAllowed = isDescriptionUpdateAllowed(params.data, params.newValue);
         const updateAllowedBool = updateAllowed === InstallmentUpdateAllowedEnum.UpdateAllowed;

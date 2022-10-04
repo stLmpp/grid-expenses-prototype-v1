@@ -1,7 +1,13 @@
 import { DESCRIPTION_INSTALLMENT_REGEX } from './description-installment-regex';
 import { isDescriptionInstallment } from './is-description-installment';
 
-export function getInstallmentsFromDescription(description: string): [number, number, string] | null {
+export interface GetInstallmentsFromDescription {
+  installment: number;
+  installmentQuantity: number;
+  descriptionWithoutInstallment: string;
+}
+
+export function getInstallmentsFromDescription(description: string): GetInstallmentsFromDescription | null {
   if (!isDescriptionInstallment(description)) {
     return null;
   }
@@ -13,5 +19,9 @@ export function getInstallmentsFromDescription(description: string): [number, nu
   if (installment > installmentQuantity || installmentQuantity <= 1 || installment <= 0) {
     return null;
   }
-  return [installment, installmentQuantity, description.replace(DESCRIPTION_INSTALLMENT_REGEX, '')];
+  return {
+    installment,
+    installmentQuantity,
+    descriptionWithoutInstallment: description.replace(DESCRIPTION_INSTALLMENT_REGEX, ''),
+  };
 }

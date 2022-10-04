@@ -19,6 +19,7 @@ import { InstallmentService } from '../installment/installment.service';
 import { isExpenseInstallment } from '../installment/is-expense-installment';
 
 import { ExpenseStore } from './expense.store';
+import { getMockDescription } from './get-mock-description';
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
@@ -42,7 +43,7 @@ export class ExpenseService {
       // Just update the description
       return this.update(expense.id, expense);
     }
-    const [installment, installmentQuantity, descriptionWithoutInstallments] = installmentsInfo;
+    const { installment, installmentQuantity, descriptionWithoutInstallment } = installmentsInfo;
     if (isExpenseInstallment(expense)) {
       // Expense already has installment configuration
       if (installmentQuantity < expense.installmentQuantity) {
@@ -50,7 +51,7 @@ export class ExpenseService {
         return this._installmentService.installmentQuantityLower(
           expense,
           installmentQuantity,
-          descriptionWithoutInstallments
+          descriptionWithoutInstallment
         );
       }
       // Installment quantity is higher than the current installment quantity
@@ -60,14 +61,14 @@ export class ExpenseService {
           installmentQuantity,
           year,
           month,
-          descriptionWithoutInstallments
+          descriptionWithoutInstallment
         );
       }
       // Installment quantity is equal, so we just need to update the description
       // of all installments
       return this._installmentService.updateAllDescriptions(
         expense,
-        descriptionWithoutInstallments,
+        descriptionWithoutInstallment,
         installmentQuantity
       );
     }
@@ -76,7 +77,7 @@ export class ExpenseService {
       installmentQuantity,
       year,
       month,
-      descriptionWithoutInstallments,
+      descriptionWithoutInstallment,
       expense
     );
   }
@@ -84,7 +85,7 @@ export class ExpenseService {
   generateRandomData(year: number, month: number, qty?: number): void {
     const newEntities: Expense[] = Array.from({ length: qty ?? random(5, 25) }, (_, index) => ({
       ...this.getBlankRow(year, month),
-      description: `This is a descriptions ${index + 1}`,
+      description: getMockDescription(),
       date: addDays(new Date(year, month - 1), index),
     }));
     this._expenseStore.update(addEntities(newEntities));
@@ -97,12 +98,12 @@ export class ExpenseService {
         {
           length: 5_000,
         },
-        (_, index) => {
+        (_) => {
           const y = random(year - 10, year + 10);
           const m = random(1, 12);
           return {
             ...this.getBlankRow(y, m),
-            description: `This is a descriptions ${index + 1}`,
+            description: getMockDescription(),
             date: addDays(new Date(y, m - 1), random(0, 31)),
             month: m,
             year: y,

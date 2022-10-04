@@ -13,20 +13,37 @@ import { RichSelectModule } from '@ag-grid-enterprise/rich-select';
 import { SetFilterModule } from '@ag-grid-enterprise/set-filter';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { StatusBarModule } from '@ag-grid-enterprise/status-bar';
-import { NgIf } from '@angular/common';
+import { AsyncPipe, NgForOf, NgIf } from '@angular/common';
 import { ModuleWithProviders, NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatIconModule } from '@angular/material/icon';
 import { IMaskDirectiveModule } from 'angular-imask';
 
+import { CellEditorAutocompleteComponent } from './cell-editor-autocomplete/cell-editor-autocomplete.component';
 import { CellEditorCurrencyComponent } from './cell-editor-currency/cell-editor-currency.component';
 import { CellEditorDateComponent } from './cell-editor-date/cell-editor-date.component';
 import { HeaderPersonComponent } from './header-person/header-person.component';
 
-const MODULES = [AgGridModuleOriginal, FormsModule, NgIf, MatIconModule, IMaskDirectiveModule];
+const MODULES = [
+  AgGridModuleOriginal,
+  FormsModule,
+  NgIf,
+  MatIconModule,
+  IMaskDirectiveModule,
+  MatAutocompleteModule,
+  ReactiveFormsModule,
+  AsyncPipe,
+  NgForOf,
+];
 
 @NgModule({
-  declarations: [CellEditorCurrencyComponent, HeaderPersonComponent, CellEditorDateComponent],
+  declarations: [
+    CellEditorCurrencyComponent,
+    HeaderPersonComponent,
+    CellEditorDateComponent,
+    CellEditorAutocompleteComponent,
+  ],
   imports: [MODULES],
   exports: [MODULES],
 })

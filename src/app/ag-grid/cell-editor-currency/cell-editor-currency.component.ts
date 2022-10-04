@@ -30,7 +30,7 @@ export class CellEditorCurrencyComponent implements ICellEditorAngularComp, Afte
     if (!params.value && params.charPress && /\d+/.test(params.charPress)) {
       this.value = params.charPress;
     } else {
-      this.value = String(params.value);
+      this.value = String(params.value ?? '');
     }
   }
 
@@ -43,6 +43,9 @@ export class CellEditorCurrencyComponent implements ICellEditorAngularComp, Afte
   }
 
   getValue(): number | null | undefined {
+    if (!this.value) {
+      return null;
+    }
     return isNotNil(this.value) ? parseFloat(this.value.replace(/\./g, '').replace(',', '.')) : null;
   }
 

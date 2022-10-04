@@ -3,14 +3,17 @@ import { formatNumber } from '@angular/common';
 import { inject, Injectable, LOCALE_ID } from '@angular/core';
 import { selectAllEntities, selectAllEntitiesApply } from '@ngneat/elf-entities';
 import { map, Observable, Subject } from 'rxjs';
-import { isNumber } from 'st-utils';
+import { isNumber, normalizeString, orderBy, uniqBy } from 'st-utils';
+import { compareTwoStrings } from 'string-similarity';
 
 import { CellEditorCurrencyComponent } from '../../ag-grid/cell-editor-currency/cell-editor-currency.component';
 import { AgGridClassesEnum } from '../../ag-grid/classes.enum';
 import { HeaderPersonComponent, HeaderPersonParams } from '../../ag-grid/header-person/header-person.component';
 import { Expense } from '../../models/expense';
+import { TextDistance } from '../../models/text-distance';
 import { defaultCellClassRules } from '../../month/default-cell-class-rules';
 import { getDefaultColDefs } from '../../month/get-default-col-defs';
+import { getInstallmentsFromDescription } from '../../shared/utils/get-installments-from-description';
 
 import { ExpenseStore } from './expense.store';
 
@@ -103,6 +106,48 @@ export class ExpenseQuery {
           return 0;
         })
       )
+    );
+  }
+
+  selectSimilarExpenses(term: string): Observable<TextDistance[]> {
+    const termNormalized = normalizeString(term);
+    const termNormalizedLowercase = termNormalized.toLowerCase();
+    return this._expenseStore.pipe(
+      selectAllEntities(),
+      map((entities) => {
+        // const startMs = performance.now();
+        const descriptions: TextDistance[] = [];
+        entities = uniqBy(
+          entities.map((entity) => {
+            const installmentInfo = getInstallmentsFromDescription(entity.description);
+            if (installmentInfo) {
+              entity = { ...entity, description: installmentInfo.descriptionWithoutInstallment };
+            }
+            return { ...entity, description: entity.description.trim() };
+          }),
+          'description'
+        );
+        // const uniqByMs = performance.now();
+        // console.log(`uniqBy: ${round(uniqByMs - startMs, 1)}ms`);
+        for (const entity of entities) {
+          const descriptionNormalized = normalizeString(entity.description);
+          const distance = compareTwoStrings(descriptionNormalized, termNormalized);
+          const includes = descriptionNormalized.toLowerCase().includes(termNormalizedLowercase);
+          if (includes || distance >= 0.75) {
+            descriptions.push({ distance, text: entity.description });
+          }
+          if (descriptions.length === 20) {
+            break;
+          }
+        }
+        // const filterMs = performance.now();
+        // console.log(`filter: ${round(filterMs - uniqByMs, 1)}ms`);
+        const ordered = orderBy(descriptions, 'distance', 'desc');
+        // console.log(`order: ${round(performance.now() - filterMs, 1)}ms`);
+        // console.log(`total: ${round(performance.now() - startMs, 1)}ms`);
+        // console.log('\n\n-----------------------------------------------------------\n\n');
+        return ordered;
+      })
     );
   }
 }

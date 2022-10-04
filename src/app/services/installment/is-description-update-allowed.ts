@@ -26,7 +26,7 @@ export function isDescriptionUpdateAllowed(expense: Expense, newDescription: str
   if (!installmentInfo || !isExpenseInstallment(expense)) {
     return InstallmentUpdateAllowedEnum.UpdateAllowed;
   }
-  const [installment, installmentQuantity] = installmentInfo;
+  const { installment, installmentQuantity } = installmentInfo;
   return isDescriptionUpdateAllowedInternal(
     { installment: expense.installment, installmentQuantity: expense.installmentQuantity },
     { installment, installmentQuantity }

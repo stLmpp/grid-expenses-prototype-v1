@@ -1,4 +1,3 @@
-import { AsyncPipe } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -9,6 +8,6 @@ import { MonthComponent } from './month.component';
 
 @NgModule({
   declarations: [MonthComponent],
-  imports: [AsyncPipe, MonthRoutingModule, AgGridModule.forChild(), MatButtonModule],
+  imports: [MonthRoutingModule, AgGridModule.forChild(), MatButtonModule],
 })
 export class MonthModule {}

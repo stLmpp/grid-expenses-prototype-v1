@@ -1,0 +1,18 @@
+<input
+  class="ag-input-field-input ag-text-field-input"
+  #input
+  [formControl]="control"
+  [matAutocomplete]="autocomplete"
+  type="text"
+/>
+<mat-autocomplete #autocomplete>
+  <mat-option
+    *ngFor="let similar of similarExpenses$ | async; trackBy: trackByIndex"
+    [value]="similar.text"
+    [style.background-image]="
+      'linear-gradient(90deg, #FFFFFF 0%, rgba(208, 255, 219, ' + similar.distance * similar.distance + ') 100%)'
+    "
+  >
+    {{ similar.text }} - {{ similar.distance }}
+  </mat-option>
+</mat-autocomplete>
